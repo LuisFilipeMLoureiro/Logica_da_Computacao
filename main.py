@@ -14,29 +14,30 @@ numbers = ["1", "2", "3", "4", "5", "6","7", "8","9","0"]
 op = ["+","-"]
 num = "0"
 
-or_numb0 = []
+or_numb = []
 or_op = []
 
 if word[0] not in op:
     for i in word:
         if i in numbers:
-            num += i
+            num += i  
         elif i in op:
-            or_numb0.append(int(num))
+            or_numb.append(int(num[1:]))
             num = "0"
             or_op.append(i)
+        else:
+             sys.stderr.write("This is error msg")
+
+
     
-    or_numb0.append(int(num))
+    or_numb.append(int(num))
 
 else:
     sys.stderr.write("This is error msg")
             
 
-or_numb = []
 
-for n in or_numb0:    
-    if i != 0:
-        or_numb.append(int(i))
+
 
 
 tot = or_numb[0]
@@ -63,4 +64,3 @@ if len(or_numb) == 0 or len(or_op) == 0:
 else:
     print(tot)
 
-#for elemento in sys.argv[1]:
