@@ -43,5 +43,11 @@ for numero in or_numb[1:]:
 
 
 
-print(tot)
+
+
+if len(or_numb) == 0 or len(or_op) == 0:
+    sys.stderr.write("This is error msg")
+else:
+    print(tot)
+
 #for elemento in sys.argv[1]:
