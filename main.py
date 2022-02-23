@@ -14,7 +14,7 @@ numbers = ["1", "2", "3", "4", "5", "6","7", "8","9","0"]
 op = ["+","-"]
 num = "0"
 
-or_numb = []
+or_numb0 = []
 or_op = []
 
 if word[0] not in op:
@@ -22,17 +22,22 @@ if word[0] not in op:
         if i in numbers:
             num += i
         elif i in op:
-            or_numb.append(int(num))
+            or_numb0.append(int(num))
             num = "0"
             or_op.append(i)
     
-    or_numb.append(int(num))
+    or_numb0.append(int(num))
 
 else:
     sys.stderr.write("This is error msg")
             
 
-    
+or_numb = []
+
+for n in or_numb0:    
+    if i != 0:
+        or_numb.append(int(i))
+
 
 tot = or_numb[0]
 t = 0
@@ -41,6 +46,7 @@ t = 0
 for numero in or_numb[1:]:
     if or_op[t] == "+":
         tot += numero
+        
     else:
         tot-=numero 
 
@@ -52,7 +58,7 @@ for numero in or_numb[1:]:
 
 
 
-if len(or_numb) == 0 or len(or_op) == 0 or len(or_numb[1:]) == 1:
+if len(or_numb) == 0 or len(or_op) == 0:
     sys.stderr.write("This is error msg")
 else:
     print(tot)
