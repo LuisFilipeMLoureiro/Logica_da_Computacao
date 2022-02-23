@@ -50,7 +50,7 @@ for numero in or_numb[1:]:
 
 
 
-if len(or_numb) == 0 or len(or_op) == 0 and (len(or_numb)==1 and (len(or_op))):
+if len(or_numb) == 0 or len(or_op) == 0 or (len(or_numb)==1 and (len(or_op))):
     sys.stderr.write("This is error msg")
 else:
     print(tot)
