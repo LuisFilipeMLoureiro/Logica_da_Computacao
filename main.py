@@ -25,9 +25,14 @@ if word[0] not in op:
             or_numb.append(int(num))
             num = "0"
             or_op.append(i)
+    
+    or_numb.append(int(num))
+
+else:
+    sys.stderr.write("This is error msg")
             
 
-    or_numb.append(int(num))
+    
 
 tot = or_numb[0]
 t = 0
@@ -45,7 +50,7 @@ for numero in or_numb[1:]:
 
 
 
-if len(or_numb) == 0 or len(or_op) == 0:
+if len(or_numb) == 0 or len(or_op) == 0 and (len(or_numb)==1 and (len(or_op))):
     sys.stderr.write("This is error msg")
 else:
     print(tot)
