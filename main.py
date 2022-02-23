@@ -36,6 +36,8 @@ else:
 
 tot = or_numb[0]
 t = 0
+
+
 for numero in or_numb[1:]:
     if or_op[t] == "+":
         tot += numero
@@ -50,7 +52,7 @@ for numero in or_numb[1:]:
 
 
 
-if len(or_numb) == 0 or len(or_op) == 0 or (len(or_numb)==1 and (len(or_op) ==1)):
+if len(or_numb) == 0 or len(or_op) == 0 or len(or_numb[1:]) == 1:
     sys.stderr.write("This is error msg")
 else:
     print(tot)
