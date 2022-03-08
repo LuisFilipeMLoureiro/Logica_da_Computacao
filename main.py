@@ -1,70 +1,138 @@
 import sys
 
+class Token:
+    def __init__(self, type, value):
+        self.type = type
+        self.value = value
 
 
-arg = []
-for elements in sys.argv:
-    if elements != "main.py":
-        arg.append(elements)
+class Tokenizer:
+    def __init__(self,origin):
+        self.origin = origin #codigo fonte
+        self.position = 0 #posição inicial é 0
+        self.actual = self.origin[0] #inicio no primeiro token
 
-word = "".join(arg)
-word = word.replace(" ", "").strip("").strip('')
-
-
-numbers = ["1", "2", "3", "4", "5", "6","7", "8","9","0"]
-op = ["+","-"]
-num = "0"
-
-or_numb0 = []
-or_op = []
-
-if word[0] not in op:
-    for i in word:
-        if i in numbers:
-            num += i  
-        elif i in op:
-            or_numb0.append(int(num[1:]))
-            num = "0"
-            or_op.append(i)
-        else:
-             sys.stderr.write("This is error msg1")
 
 
     
-    or_numb0.append(int(num))
-
-else:
-    sys.stderr.write("This is error msg2")
-            
-
-or_numb = []
-
-for i in or_numb0:
-    if i != 0:
-        or_numb.append(i)
-
-
-tot = or_numb[0]
-t = 0
-
-
-for numero in or_numb[1:]:
-    if or_op[t] == "+":
-        tot += numero
+    def selectNext(self):
         
-    else:
-        tot-=numero 
+        valid_tokens = [" ", "+" "-", ""]
+        numero = ""
+        numbers = ["1", "2", "3", "4", "5", "6","7", "8","9","0"]
+        
+        
+        while(self.position <= len(self.origin) - 1):
+            i = self.origin[self.position]
+                      
+           
+           
+            if i in numbers:                
+                numero += i            
+             
+               
+                
+            
+            elif (numero != ""):
+                
+                self.actual = Token("int",int(numero))                
+                         
+                numero = ""
+                return self.actual
+            
+            if(self.position == len(self.origin) - 1):
+                 self.actual = Token("int",int(numero))
+                 
+                 self.position +=1 
+                 return self.actual
 
-    if t<len(or_op)-1:
-        t+=1
+
+
+
+            if i == "+":
+                                
+                self.actual = Token("plus", "+")
+                self.position +=1  
+                return self.actual       
+                  
+            if i == "-":
+                self.actual = Token("minus", "-")
+                self.position +=1
+                return self.actual             
+            
+            if (i in numbers) or (i  in valid_tokens):
+                self.position +=1 
+                #print("entrou")
+                
+            else:
+                sys.stderr.write("Invalid Token")
+                
+                
+        
+        self.actual = Token("EOF", "")
+        
+        return self.actual
+        
+
+class Parser:
+
+
+    @staticmethod
+    def parseExpression(token):       
+        
+        result = ""
+        token.selectNext()
+                    
+        
+        
+        if token.actual.type == "int":
+            result = int(token.actual.value)           
+            
+            token.selectNext()
+                      
+
+            while(token.actual.type == "plus" or token.actual.type == "minus"):
+                
+                if(token.actual.type == "plus"):                    
+                    token.selectNext()                    
+
+                    if(token.actual.type == "int"):                        
+                        result += int(token.actual.value)
+                        
+
+                    else:
+                        sys.stderr.write("Invalid Sequence #1")
+                    
+                if(token.actual.type == "minus"):
+                    token.selectNext()
+                    if(token.actual.type == "int"):
+                        result -= int(token.actual.value)
+                    else:
+                        sys.stderr.write("Invalid Sequence #2")
+
+                token.selectNext()
+
+                if(token.actual.type == "EOF"):
+                    print(result)                   
+                    return result
+
+        else:
+            sys.stderr.write("Invalid Sequence")
+
+
+    @staticmethod
+    def run(codigo_base):
+        token = Tokenizer(codigo_base)
+        return Parser.parseExpression(token)
+
+Parser.run(sys.argv[1])
 
 
 
 
 
 
-if len(or_numb) == 0 or len(or_op) == 0 or len(or_numb[1:]) == 0:
-    sys.stderr.write("This is error msg3")
-else:
-    print(tot)
+
+
+
 
