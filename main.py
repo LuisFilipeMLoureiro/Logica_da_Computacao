@@ -62,7 +62,7 @@ class Tokenizer:
             
             if (i in numbers) or (i  in valid_tokens):
                 self.position +=1 
-                #print("entrou")
+                
                 
             else:
                 sys.stderr.write("Invalid Token")
