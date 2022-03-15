@@ -43,15 +43,14 @@ class Tokenizer:
             elif (numero != ""):
                 
                 self.actual = Token("int",int(numero))
-                #print("N:", self.actual)                
+                               
                          
                 numero = ""
                 return self.actual
            
             if(self.position == len(self.origin) - 1) & (i in numero):
                
-                self.actual = Token("int",int(numero))
-               
+                self.actual = Token("int",int(numero))               
                  
                 self.position +=1 
                 
@@ -96,18 +95,19 @@ class Parser:
 
     @staticmethod
     def parseExpression():
-        
+
         # corrigindo "+1"
         if Parser.token.actual.type != "int":
             sys.stderr.write("Invalid Sequence")
             raise ValueError
         
         result = Parser.parseTerm()
-               
-        while(Parser.token.actual.type == "plus" or Parser.token.actual.type == "minus"):                
+
+        while(Parser.token.actual.type == "plus" or Parser.token.actual.type == "minus"):               
             if(Parser.token.actual.type == "plus"):                    
                 resultTerm = Parser.parseTerm()
-                result += resultTerm                  
+                result += resultTerm  
+          
                                
             if(Parser.token.actual.type == "minus"):
                 resultTerm = Parser.parseTerm()
@@ -116,7 +116,7 @@ class Parser:
             if(Parser.token.actual.type == "EOF"):                 
                 return result
             
-            else:
+            elif((Parser.token.actual.type != "minus") & (Parser.token.actual.type != "plus")):
                 sys.stderr.write("Invalid Sequence parseExpression")
                 raise ValueError
         
@@ -157,8 +157,9 @@ class Parser:
                             sys.stderr.write("Invalid Sequence DIV")
                     Parser.token.selectNext()
                     if(Parser.token.actual.type == "EOF"):
-                        #print(result)                   
+                                           
                         return int(result)
+
                 return int(result)
             else:
                 Parser.token.selectNext()
