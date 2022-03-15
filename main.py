@@ -82,6 +82,7 @@ class Tokenizer:
                 
             else:
                 sys.stderr.write("Invalid Token")
+                raise ValueError
                 
                 
         
@@ -99,6 +100,7 @@ class Parser:
         # corrigindo "+1"
         if Parser.token.actual.type != "int":
             sys.stderr.write("Invalid Sequence")
+            raise ValueError
         
         result = Parser.parseTerm()
                
@@ -116,6 +118,7 @@ class Parser:
             
             else:
                 sys.stderr.write("Invalid Sequence parseExpression")
+                raise ValueError
         
         return result
 
@@ -136,6 +139,7 @@ class Parser:
                 # corrigindo "1 1"
                 if Parser.token.actual.type == "int":
                     sys.stderr.write("Invalid Sequence")
+                    raise ValueError
 
                 while(Parser.token.actual.type == "mult" or Parser.token.actual.type == "div"):                 
                     if(Parser.token.actual.type == "mult"):                   
