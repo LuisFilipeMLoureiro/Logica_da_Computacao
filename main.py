@@ -161,7 +161,6 @@ class Parser:
                 Parser.token.selectNext()
         
 
-
     @staticmethod
     def run(codigo_fonte):
         codigo_base = PrePro.filter(codigo_fonte)
