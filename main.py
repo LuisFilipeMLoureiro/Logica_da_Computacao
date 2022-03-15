@@ -1,4 +1,13 @@
 import sys
+import re
+
+
+#https://stackoverflow.com/questions/241327/remove-c-and-c-comments-using-python
+class PrePro:
+    @staticmethod
+    def filter(arg):
+        new_arg = re.sub(r"\/\*.*?\*\/", "", arg)
+        return new_arg
 
 class Token:
     def __init__(self, type, value):
@@ -17,21 +26,20 @@ class Tokenizer:
     
     def selectNext(self):
         
-        valid_tokens = [" ", "+" "-", ""]
+        valid_tokens = [" ", "+" "-", "", "*", "/"]
         numero = ""
         numbers = ["1", "2", "3", "4", "5", "6","7", "8","9","0"]
         
         
+        
         while(self.position <= len(self.origin) - 1):
             i = self.origin[self.position]
-                      
-           
+                                 
            
             if i in numbers:                
                 numero += i            
              
-               
-                
+                              
             
             elif (numero != ""):
                 
@@ -41,12 +49,11 @@ class Tokenizer:
                 return self.actual
             
             if(self.position == len(self.origin) - 1):
-                 self.actual = Token("int",int(numero))
+                self.actual = Token("int",int(numero))
                  
-                 self.position +=1 
-                 return self.actual
+                self.position +=1 
 
-
+                return self.actual
 
 
             if i == "+":
@@ -58,7 +65,19 @@ class Tokenizer:
             if i == "-":
                 self.actual = Token("minus", "-")
                 self.position +=1
-                return self.actual             
+                return self.actual   
+
+            if i == "*":
+                self.actual = Token("mult", "*")
+                self.position +=1
+                return self.actual  
+            
+            if i == "/":
+                self.actual = Token("div", "/")
+                self.position +=1
+                return self.actual
+
+
             
             if (i in numbers) or (i  in valid_tokens):
                 self.position +=1 
@@ -71,61 +90,81 @@ class Tokenizer:
         
         self.actual = Token("EOF", "")
         
+
         return self.actual
         
 
 class Parser:
 
-
     @staticmethod
-    def parseExpression(token):       
-        
-        result = ""
-        token.selectNext()
-                    
-        
-        
-        if token.actual.type == "int":
-            result = int(token.actual.value)           
-            
-            token.selectNext()
-                      
-
-            while(token.actual.type == "plus" or token.actual.type == "minus"):
+    def parseExpression():       
+        result = Parser.parseTerm()
                 
-                if(token.actual.type == "plus"):                    
-                    token.selectNext()                    
 
-                    if(token.actual.type == "int"):                        
-                        result += int(token.actual.value)
-                        
+        while(Parser.token.actual.type == "plus" or Parser.token.actual.type == "minus"):                
+            if(Parser.token.actual.type == "plus"):                    
+                resultTerm = Parser.parseTerm()
+                result += resultTerm                  
+                               
+            if(Parser.token.actual.type == "minus"):
+                resultTerm = Parser.parseTerm()
+                result -= resultTerm  
+            
+            if(Parser.token.actual.type == "EOF"):
+                #print(result)                   
+                return result
+            
+            else:
+                sys.stderr.write("Invalid Sequence parseExpression")
 
-                    else:
-                        sys.stderr.write("Invalid Sequence #1")
-                    
-                if(token.actual.type == "minus"):
-                    token.selectNext()
-                    if(token.actual.type == "int"):
-                        result -= int(token.actual.value)
-                    else:
-                        sys.stderr.write("Invalid Sequence #2")
 
-                token.selectNext()
-
-                if(token.actual.type == "EOF"):
-                    print(result)                   
-                    return result
-
-        else:
-            sys.stderr.write("Invalid Sequence")
 
 
     @staticmethod
-    def run(codigo_base):
-        token = Tokenizer(codigo_base)
-        return Parser.parseExpression(token)
+    def parseTerm():       
+        result = ""
 
-Parser.run(sys.argv[1])
+        while(Parser.token.actual.type != "EOF"):        
+            if Parser.token.actual.type == "int":
+                result = int(Parser.token.actual.value)         
+                Parser.token.selectNext()
+                while(Parser.token.actual.type == "mult" or Parser.token.actual.type == "div"):                 
+                    if(Parser.token.actual.type == "mult"):                    
+                        Parser.token.selectNext()                 
+                        if(Parser.token.actual.type == "int"):                        
+                            result *= int(Parser.token.actual.value)
+                        else:
+                            sys.stderr.write("Invalid Sequence MULT")
+                        
+                    if(Parser.token.actual.type == "div"):
+                        Parser.token.selectNext()
+                        if(Parser.token.actual.type == "int"):
+                            result /= int(Parser.token.actual.value)
+                        else:
+                            sys.stderr.write("Invalid Sequence DIV")
+                    Parser.token.selectNext()
+                    if(Parser.token.actual.type == "EOF"):
+                        #print(result)                   
+                        return result
+                return result
+            else:
+                Parser.token.selectNext()
+        
+
+
+    @staticmethod
+    def run(codigo_fonte):
+        codigo_base = PrePro.filter(codigo_fonte)
+        Parser.token = Tokenizer(codigo_base)
+        Parser.token.selectNext()
+        return Parser.parseExpression()
+        
+        
+
+
+
+
+print(Parser.run(sys.argv[1]))
 
 
 
