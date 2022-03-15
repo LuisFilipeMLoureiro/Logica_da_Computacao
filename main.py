@@ -95,7 +95,6 @@ class Parser:
 
     @staticmethod
     def parseExpression():
-
         
         # corrigindo "+1"
         if Parser.token.actual.type != "int":
@@ -103,7 +102,6 @@ class Parser:
         
         result = Parser.parseTerm()
                
-
         while(Parser.token.actual.type == "plus" or Parser.token.actual.type == "minus"):                
             if(Parser.token.actual.type == "plus"):                    
                 resultTerm = Parser.parseTerm()
@@ -134,7 +132,6 @@ class Parser:
                 result = int(Parser.token.actual.value) 
                        
                 Parser.token.selectNext()
-
 
                 # corrigindo "1 1"
                 if Parser.token.actual.type == "int":
