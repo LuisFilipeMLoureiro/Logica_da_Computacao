@@ -22,7 +22,6 @@ class Tokenizer:
         self.actual = self.origin[0] #inicio no primeiro token
 
 
-
     
     def selectNext(self):
         
@@ -110,8 +109,7 @@ class Parser:
                 resultTerm = Parser.parseTerm()
                 result -= resultTerm  
             
-            if(Parser.token.actual.type == "EOF"):
-                #print(result)                   
+            if(Parser.token.actual.type == "EOF"):                 
                 return result
             
             else:
