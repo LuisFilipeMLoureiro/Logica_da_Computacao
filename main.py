@@ -96,7 +96,12 @@ class Tokenizer:
 class Parser:
 
     @staticmethod
-    def parseExpression():       
+    def parseExpression():
+        
+        # corrigindo "+1"
+        if Parser.token.actual.type != "int":
+            sys.stderr.write("Invalid Sequence")
+
         result = Parser.parseTerm()
                 
 
@@ -114,6 +119,8 @@ class Parser:
             
             else:
                 sys.stderr.write("Invalid Sequence parseExpression")
+        
+        return result
 
 
 
@@ -126,8 +133,13 @@ class Parser:
             if Parser.token.actual.type == "int":
                 result = int(Parser.token.actual.value)         
                 Parser.token.selectNext()
+
+                # corrigindo "1 1"
+                if Parser.token.actual.type == "int":
+                    sys.stderr.write("Invalid Sequence")
+
                 while(Parser.token.actual.type == "mult" or Parser.token.actual.type == "div"):                 
-                    if(Parser.token.actual.type == "mult"):                    
+                    if(Parser.token.actual.type == "mult"):                   
                         Parser.token.selectNext()                 
                         if(Parser.token.actual.type == "int"):                        
                             result *= int(Parser.token.actual.value)
@@ -143,8 +155,8 @@ class Parser:
                     Parser.token.selectNext()
                     if(Parser.token.actual.type == "EOF"):
                         #print(result)                   
-                        return result
-                return result
+                        return int(result)
+                return int(result)
             else:
                 Parser.token.selectNext()
         
