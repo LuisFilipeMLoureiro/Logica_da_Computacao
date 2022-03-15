@@ -33,51 +33,49 @@ class Tokenizer:
         
         while(self.position <= len(self.origin) - 1):
             i = self.origin[self.position]
-                                 
-           
+
             if i in numbers:                
-                numero += i            
+                numero += i 
+                     
              
                               
             
             elif (numero != ""):
                 
-                self.actual = Token("int",int(numero))                
+                self.actual = Token("int",int(numero))
+                #print("N:", self.actual)                
                          
                 numero = ""
                 return self.actual
-            
-            if(self.position == len(self.origin) - 1):
+           
+            if(self.position == len(self.origin) - 1) & (i in numero):
+               
                 self.actual = Token("int",int(numero))
+               
                  
                 self.position +=1 
-
+                
                 return self.actual
 
-
-            if i == "+":
-                                
+            if i == "+":                 
                 self.actual = Token("plus", "+")
                 self.position +=1  
                 return self.actual       
-                  
+              
             if i == "-":
                 self.actual = Token("minus", "-")
                 self.position +=1
                 return self.actual   
-
             if i == "*":
                 self.actual = Token("mult", "*")
                 self.position +=1
                 return self.actual  
-            
             if i == "/":
                 self.actual = Token("div", "/")
                 self.position +=1
                 return self.actual
 
 
-            
             if (i in numbers) or (i  in valid_tokens):
                 self.position +=1 
                 
@@ -97,13 +95,14 @@ class Parser:
 
     @staticmethod
     def parseExpression():
+
         
         # corrigindo "+1"
         if Parser.token.actual.type != "int":
             sys.stderr.write("Invalid Sequence")
-
+        
         result = Parser.parseTerm()
-                
+               
 
         while(Parser.token.actual.type == "plus" or Parser.token.actual.type == "minus"):                
             if(Parser.token.actual.type == "plus"):                    
@@ -129,10 +128,13 @@ class Parser:
     def parseTerm():       
         result = ""
 
+        
         while(Parser.token.actual.type != "EOF"):        
             if Parser.token.actual.type == "int":
-                result = int(Parser.token.actual.value)         
+                result = int(Parser.token.actual.value) 
+                       
                 Parser.token.selectNext()
+
 
                 # corrigindo "1 1"
                 if Parser.token.actual.type == "int":
@@ -159,7 +161,7 @@ class Parser:
                 return int(result)
             else:
                 Parser.token.selectNext()
-        
+       
 
     @staticmethod
     def run(codigo_fonte):
@@ -167,6 +169,7 @@ class Parser:
         Parser.token = Tokenizer(codigo_base)
         Parser.token.selectNext()
         return Parser.parseExpression()
+        
         
         
 
