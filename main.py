@@ -115,7 +115,7 @@ class Parser:
                 Parser.token.selectNext()                   
                 resultTerm = Parser.parseTerm()
                 result += resultTerm
-                print("type", Parser.token.actual.type )            
+                           
                                
             if(Parser.token.actual.type == "minus"):
                 Parser.token.selectNext()
@@ -136,7 +136,7 @@ class Parser:
         
         result = Parser.parseFactor()
         Parser.token.selectNext()
-        print("Term", Parser.token.actual.value)
+
 
         if (type(result) == int) & (Parser.token.actual.type == "int"):
             sys.stderr.write("Faltou operador")
@@ -161,7 +161,7 @@ class Parser:
 
     @staticmethod
     def parseFactor():  
-        print("PARSER", Parser.token.actual.value)
+       
         if(Parser.token.actual.type == "int"):
             result = int(Parser.token.actual.value) 
             return result
