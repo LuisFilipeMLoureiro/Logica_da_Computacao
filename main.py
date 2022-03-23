@@ -30,7 +30,17 @@ class Tokenizer:
         numbers = ["1", "2", "3", "4", "5", "6","7", "8","9","0"]
 
         
-        
+        n_abriu = 0
+        n_fechou = 0
+
+        for i in self.origin:
+            if i == "(":
+                n_abriu +=1
+            if i == ")":
+                n_fechou +=1
+        if n_abriu != n_fechou:
+            sys.stderr.write("Parenteses nao aberto")
+            raise ValueError
         
         while(self.position <= len(self.origin) - 1):
             i = self.origin[self.position]
@@ -126,7 +136,9 @@ class Parser:
                
             return result
             
-        result = Parser.parseTerm()  #fim sempre no final da cadeia
+            
+        return result
+        
 
 
 
@@ -136,7 +148,7 @@ class Parser:
         
         result = Parser.parseFactor()
         Parser.token.selectNext()
-
+    
 
         if (type(result) == int) & (Parser.token.actual.type == "int"):
             sys.stderr.write("Faltou operador")
@@ -161,7 +173,7 @@ class Parser:
 
     @staticmethod
     def parseFactor():  
-       
+
         if(Parser.token.actual.type == "int"):
             result = int(Parser.token.actual.value) 
             return result
