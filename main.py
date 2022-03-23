@@ -134,6 +134,10 @@ class Parser:
         
         result = Parser.parseFactor()
         Parser.token.selectNext()
+        if (type(result) == int) & (Parser.token.actual.type == "int"):
+            sys.stderr.write("Faltou operador")
+            raise ValueError
+
 
         while(Parser.token.actual.type == "mult" or Parser.token.actual.type == "div"):       
             if(Parser.token.actual.type == "mult"):
