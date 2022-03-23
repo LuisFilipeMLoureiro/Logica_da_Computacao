@@ -114,17 +114,19 @@ class Parser:
             if(Parser.token.actual.type == "plus"): 
                 Parser.token.selectNext()                   
                 resultTerm = Parser.parseTerm()
-                result += resultTerm            
+                result += resultTerm
+                print("type", Parser.token.actual.type )            
                                
             if(Parser.token.actual.type == "minus"):
                 Parser.token.selectNext()
                 resultTerm = Parser.parseTerm()
                 result -= resultTerm  
             
-        if(Parser.token.actual.type == "EOF"):                 
+        if(Parser.token.actual.type == "EOF"):
+               
             return result
             
-        return result
+        result = Parser.parseTerm()  #fim sempre no final da cadeia
 
 
 
@@ -134,6 +136,8 @@ class Parser:
         
         result = Parser.parseFactor()
         Parser.token.selectNext()
+        print("Term", Parser.token.actual.value)
+
         if (type(result) == int) & (Parser.token.actual.type == "int"):
             sys.stderr.write("Faltou operador")
             raise ValueError
@@ -157,7 +161,7 @@ class Parser:
 
     @staticmethod
     def parseFactor():  
-        
+        print("PARSER", Parser.token.actual.value)
         if(Parser.token.actual.type == "int"):
             result = int(Parser.token.actual.value) 
             return result
@@ -199,7 +203,6 @@ class Parser:
         
 
 print(Parser.run(sys.argv[1]))
-
 
 
 
