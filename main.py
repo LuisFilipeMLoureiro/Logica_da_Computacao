@@ -2,6 +2,54 @@ import sys
 import re
 
 
+
+class Node():   
+
+    def __init__(self, value, ListOfNodes = []):
+        self.value = value
+        self.children = ListOfNodes
+
+    def Evaluate(self):
+        pass
+
+class BinOp(Node):
+
+    def Evaluate(self):
+        cria1 = self.children[0].Evaluate()
+        cria2 = self.children[1].Evaluate()
+        if self.value == "plus":
+            result = cria1 + cria2
+        elif self.value == "minus":
+            result  = cria1 - cria2
+        elif self.value == "mult":
+            result  = cria1 * cria2
+        elif self.value == "div":
+            result  = int(cria1 / cria2)
+        else:
+            sys.stderr.write("Erro no BinOp!")
+            raise ValueError
+
+        return int(result)
+
+class UnOp(Node):
+    def Evaluate(self):
+        result = self.children[0].Evaluate()
+
+        if self.value == "minus":
+            result = result * -1
+        elif self.value == "plus":
+            result = result
+
+        return int(result)
+
+class IntVal(Node):
+    def Evaluate(self):
+        return self.value
+
+class NoOp(Node):
+    def Evaluate(self):
+        pass
+
 #https://stackoverflow.com/questions/241327/remove-c-and-c-comments-using-python
 class PrePro:
     @staticmethod
@@ -29,42 +77,20 @@ class Tokenizer:
         numero = ""
         numbers = ["1", "2", "3", "4", "5", "6","7", "8","9","0"]
 
-        
-        n_abriu = 0
-        n_fechou = 0
-
-        for i in self.origin:
-            if i == "(":
-                n_abriu +=1
-            if i == ")":
-                n_fechou +=1
-        if n_abriu != n_fechou:
-            sys.stderr.write("Parenteses nao aberto")
-            raise ValueError
-        
         while(self.position <= len(self.origin) - 1):
             i = self.origin[self.position]
 
             if i in numbers:                
                 numero += i 
-                     
-             
-                              
-            
-            elif (numero != ""):
-                
-                self.actual = Token("int",int(numero))
-                               
-                         
+                                         
+            elif (numero != ""):                
+                self.actual = Token("int",int(numero))       
                 numero = ""
                 return self.actual
            
-            if(self.position == len(self.origin) - 1) & (i in numero):
-               
+            if(self.position == len(self.origin) - 1) & (i in numero):               
                 self.actual = Token("int",int(numero))               
-                 
-                self.position +=1 
-                
+                self.position +=1                 
                 return self.actual
 
             if i == "+":                 
@@ -123,18 +149,13 @@ class Parser:
 
             if(Parser.token.actual.type == "plus"): 
                 Parser.token.selectNext()                   
-                resultTerm = Parser.parseTerm()
-                result += resultTerm
+                result = BinOp("plus", [result, Parser.parseTerm()])                
                            
                                
             if(Parser.token.actual.type == "minus"):
                 Parser.token.selectNext()
-                resultTerm = Parser.parseTerm()
-                result -= resultTerm  
-            
-        if(Parser.token.actual.type == "EOF"):
-               
-            return result
+                result = BinOp("minus", [result, Parser.parseTerm()])          
+
             
             
         return result
@@ -158,34 +179,34 @@ class Parser:
         while(Parser.token.actual.type == "mult" or Parser.token.actual.type == "div"):       
             if(Parser.token.actual.type == "mult"):
                 Parser.token.selectNext()
-                resultFactor = Parser.parseFactor()
-                result *= int(resultFactor)               
+                result = BinOp("mult", [result, Parser.parseFactor()])
+                               
                                                
 
             elif(Parser.token.actual.type == "div"):   
                 Parser.token.selectNext()
-                resultFactor = Parser.parseFactor()
-                result /= resultFactor    
+                result = BinOp("div", [result, Parser.parseFactor()])
+                    
 
             Parser.token.selectNext()
 
-        return int(result)
+        return result
 
     @staticmethod
     def parseFactor():  
 
         if(Parser.token.actual.type == "int"):
-            result = int(Parser.token.actual.value) 
+            number = int(Parser.token.actual.value) 
+            result = IntVal(number)
             return result
 
         elif(Parser.token.actual.type == "plus"):
             Parser.token.selectNext()
-             
-            return Parser.parseFactor() ### Recursion
+            return UnOp("plus", [Parser.parseFactor()]) ### Recursion
 
         elif(Parser.token.actual.type == "minus"):
             Parser.token.selectNext() 
-            return Parser.parseFactor() * -1 ### Recursion
+            return UnOp("minus", [Parser.parseFactor()]) * -1 ### Recursion
 
         elif(Parser.token.actual.type == "open_p"):
             Parser.token.selectNext()
@@ -199,22 +220,29 @@ class Parser:
         else:
             sys.stderr.write("Token invalido na posicao")
             raise ValueError
-
-
-    
-        
+  
 
     @staticmethod
     def run(codigo_fonte):
         codigo_base = PrePro.filter(codigo_fonte)
         Parser.token = Tokenizer(codigo_base)
         Parser.token.selectNext()
-        return Parser.parseExpression()
-        
-        
-        
+        result = Parser.parseExpression() #result é a arvore de nodes
+       
 
-print(Parser.run(sys.argv[1]))
+        if Parser.token.actual.type != "EOF":
+            sys.stderr.write("Codigo fonte não foi inteiro consumido!")
+            raise ValueError
+        else:
+            return result.Evaluate() #retorna valor final da arvore
+
+
+if ".c" in sys.argv[1]:
+    with open(sys.argv[1], "r") as file:
+        print(Parser.run(file.read))
+else:
+    print("Must be a c file!")
+
 
 
 
