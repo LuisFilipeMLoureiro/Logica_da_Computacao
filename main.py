@@ -239,7 +239,8 @@ class Parser:
 
 if ".c" in sys.argv[1]:
     with open(sys.argv[1], "r") as file:
-        print(Parser.run(file.read))
+        print(Parser.run(file.read()))
+        
 else:
     print("Must be a c file!")
 
