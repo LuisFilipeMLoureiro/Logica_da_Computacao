@@ -206,7 +206,7 @@ class Parser:
 
         elif(Parser.token.actual.type == "minus"):
             Parser.token.selectNext() 
-            return UnOp("minus", [Parser.parseFactor()]) * -1 ### Recursion
+            return UnOp("minus", [Parser.parseFactor()]) ### Recursion
 
         elif(Parser.token.actual.type == "open_p"):
             Parser.token.selectNext()
