@@ -19,12 +19,30 @@ class BinOp(Node):
         cria2 = self.children[1].Evaluate()
         if self.value == "plus":
             result = cria1 + cria2
+
         elif self.value == "minus":
             result  = cria1 - cria2
+
         elif self.value == "mult":
             result  = cria1 * cria2
+
         elif self.value == "div":
             result  = int(cria1 / cria2)
+
+        elif self.value == "doubleEqual":
+            result = (cria1 == cria2)
+
+        elif self.value == "and":
+            result = (cria1 and cria2)
+
+        elif self.value == "above":
+            result = (cria1 > cria2)
+
+        elif self.value == "below":
+            result = (cria1 < cria2)
+
+        elif self.value == "or":
+            result = (cria1 or cria2)
         else:
             sys.stderr.write("Erro no BinOp!")
             raise ValueError
@@ -39,8 +57,31 @@ class UnOp(Node):
             result = result * -1
         elif self.value == "plus":
             result = result
+        elif self.value == "not":
+            result = not(result)
+
+
 
         return int(result)
+
+class WHILE(Node):
+    def Evaluate(self):
+        while self.children[0].Evaluate():
+            self.children[1].Evaluate()
+
+class SCANF():
+    def Evaluate(self):
+        resultado =  int(input())
+        return resultado
+
+class IF(Node):
+    def Evaluate(self):
+        if self.children[0].Evaluate():
+            self.children[1].Evaluate()
+
+        elif len(self.children) > 2:
+            self.children[2].Evaluate()
+
 
 class IntVal(Node):
     def Evaluate(self):
@@ -165,9 +206,52 @@ class Tokenizer:
                 self.position +=1
                 return self.actual
 
-            if i == "=":
-                self.actual = Token("equal", "=")
+            if i == ">":
+                self.actual = Token("above", ">")
                 self.position +=1
+                return self.actual
+
+            if i == "<":
+                self.actual = Token("below", "<")
+                self.position +=1
+                return self.actual
+
+            if i == "!":
+                self.actual = Token("not", "!")
+                self.position +=1
+                return self.actual
+
+            if i == "&":
+                self.position +=1
+                if self.origin[self.position] == "&":
+                    self.actual = Token("and", "&&")
+                    self.position +=1
+
+                else:
+                    sys.stderr.write("Missing & in AND operator")
+                    raise ValueError 
+                return self.actual
+
+
+            if i == "|":
+                self.position +=1
+                if self.origin[self.position] == "|":
+                    self.actual = Token("or", "||")
+                    self.position +=1
+
+                else:
+                    sys.stderr.write("Missing | in OR operator")
+                    raise ValueError 
+                return self.actual
+
+            if i == "=":
+                self.position +=1
+                if self.origin[self.position] == "=":
+                    self.actual = Token("doubleEqual", "==")
+                    self.position +=1
+                else:
+                    self.actual = Token("equal", "=") 
+
                 return self.actual
 
             variavel = ""
@@ -220,6 +304,13 @@ class Parser:
     def parseStatement():
 
         node = NoOp(None)
+
+
+        if(Parser.token.actual.type == "END"):
+            Parser.token.selectNext()
+            return node
+
+
         if(Parser.token.actual.type == "ID"):
             node = Parser.token.actual.value
             Parser.token.selectNext()
@@ -227,11 +318,14 @@ class Parser:
 
             if(Parser.token.actual.type == "equal"):
                 Parser.token.selectNext()
-                result = Parser.parseExpression()
-                node =  Assignment("equal", [node, result]) #REVER
-                if("TYPE", Parser.token.actual.type == "END"):
+                result = Parser.parseRelExpression()
+                node =  Assignment("equal", [node, result]) 
+                if(Parser.token.actual.type == "END"):
                     Parser.token.selectNext()
                     return node
+                else: 
+                    sys.stderr.write("Missing closing token ;")
+                    raise ValueError  
             else:
                 sys.stderr.write("Missing =")
                 raise ValueError
@@ -241,7 +335,7 @@ class Parser:
 
             if(Parser.token.actual.type == "open_p"):
                 Parser.token.selectNext()
-                result = Parser.parseExpression()
+                result = Parser.parseRelExpression()
 
                 if(Parser.token.actual.type == "close_p"):
                     node = Printf("printf", result) 
@@ -261,16 +355,77 @@ class Parser:
             else:
                 sys.stderr.write("Missing opening parenteses")
                 raise ValueError
-            
-        elif(Parser.token.actual.type == "END"):
+
+        elif(Parser.token.actual.type == "while"):
             Parser.token.selectNext()
-            return node
-        else:    
-             
-            sys.stderr.write("Missing closing token ;")
-            raise ValueError      
+            if(Parser.token.actual.type == "open_p"):
+                Parser.token.selectNext()
+                result = Parser.parseRelExpression()
+                
+                if(Parser.token.actual.type == "close_p"):
+                    Parser.token.selectNext()
+                    result2 = Parser.parseStatement()
+                    node = WHILE(result, result2)
+
+                else:
+                    sys.stderr.write("Missing closing parenteses in while")
+                    raise ValueError
 
 
+            else:
+                sys.stderr.write("Missing opening parenteses in while")
+                raise ValueError
+
+
+        elif(Parser.token.actual.type == "if"):
+            Parser.token.selectNext()
+            if(Parser.token.actual.type == "open_p"):
+                Parser.token.selectNext()
+                result = Parser.parseRelExpression()
+
+                if(Parser.token.actual.type == "close_p"):
+                    Parser.token.selectNext()
+                    result2 = Parser.parseStatement()
+                    
+
+                    if(Parser.token.actual.type == "else"):
+                        Parser.token.selectNext()
+                        result3 = Parser.parseStatement()
+                        node = IF(result, result2, result3)
+                        
+                    else:                        
+                        node = IF(result, result2)
+
+                else:
+                    sys.stderr.write("Missing closing parenteses in if")
+                    raise ValueError
+
+            else:
+                sys.stderr.write("Missing opening parenteses in if")
+                raise ValueError
+   
+
+    @staticmethod
+    def parseRelExpression():
+
+        result = Parser.parseExpression()
+
+        while(Parser.token.actual.type == "doubleEqual" or Parser.token.actual.type == "above" or Parser.token.actual.type == "below"):   
+            
+            if(Parser.token.actual.type == "doubleEqual"):
+                Parser.token.selectNext()
+                result = BinOp("doubleEqual", [result, Parser.parseExpression()]) 
+
+            if(Parser.token.actual.type == "above"):
+                Parser.token.selectNext()
+                result = BinOp("above", [result, Parser.parseExpression()]) 
+
+            if(Parser.token.actual.type == "below"):
+                Parser.token.selectNext()
+                result = BinOp("below", [result, Parser.parseExpression()]) 
+
+        return result
+        
 
     @staticmethod
     def parseExpression():
@@ -278,7 +433,7 @@ class Parser:
         result = Parser.parseTerm()
 
 
-        while(Parser.token.actual.type == "plus" or Parser.token.actual.type == "minus"):       
+        while(Parser.token.actual.type == "plus" or Parser.token.actual.type == "minus" or Parser.token.actual.type == "or" ):       
 
             if(Parser.token.actual.type == "plus"): 
                 Parser.token.selectNext()                   
@@ -287,7 +442,11 @@ class Parser:
                                
             if(Parser.token.actual.type == "minus"):
                 Parser.token.selectNext()
-                result = BinOp("minus", [result, Parser.parseTerm()])          
+                result = BinOp("minus", [result, Parser.parseTerm()])
+
+            if(Parser.token.actual.type == "or"):
+                Parser.token.selectNext()
+                result = BinOp("or", [result, Parser.parseTerm()])            
 
             
             
@@ -309,7 +468,7 @@ class Parser:
             raise ValueError
 
 
-        while(Parser.token.actual.type == "mult" or Parser.token.actual.type == "div"):       
+        while(Parser.token.actual.type == "mult" or Parser.token.actual.type == "div" or Parser.token.actual.type == "and"):       
             if(Parser.token.actual.type == "mult"):
                 Parser.token.selectNext()
                 result = BinOp("mult", [result, Parser.parseFactor()])
@@ -319,6 +478,11 @@ class Parser:
             elif(Parser.token.actual.type == "div"):   
                 Parser.token.selectNext()
                 result = BinOp("div", [result, Parser.parseFactor()])
+
+
+            elif(Parser.token.actual.type == "and"):   
+                Parser.token.selectNext()
+                result = BinOp("and", [result, Parser.parseFactor()])
                     
 
             Parser.token.selectNext()
@@ -346,14 +510,39 @@ class Parser:
             Parser.token.selectNext() 
             return UnOp("minus", [Parser.parseFactor()]) ### Recursion
 
+        elif(Parser.token.actual.type == "diff"):
+            Parser.token.selectNext() 
+            return UnOp("not", [Parser.parseFactor()]) ### Recursion
+
         elif(Parser.token.actual.type == "open_p"):
             Parser.token.selectNext()
-            result = Parser.parseExpression()
+            result = Parser.parseRelExpression()
             if(Parser.token.actual.type == "close_p"):
+                Parser.token.selectNext()
                 return result
             else:
                 sys.stderr.write("Sequencia invalida de parenteses")
                 raise ValueError
+
+
+        elif(Parser.token.actual.type == "scanf"):
+            if(Parser.token.actual.type == "open_p"):
+                node = SCANF()
+                Parser.token.selectNext()
+                if(Parser.token.actual.type == "close_p"):
+                    Parser.token.selectNext()
+                    return node
+                else:
+                    sys.stderr.write("Missing closing parenteses in scanf")
+                    raise ValueError
+                
+
+            else:
+                sys.stderr.write("Missing opening parenteses in scanf")
+                raise ValueError
+
+
+
 
         else:
             sys.stderr.write("Token invalido na posicao")
