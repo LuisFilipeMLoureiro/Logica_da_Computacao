@@ -150,7 +150,7 @@ class Tokenizer:
     
         numero = ""
         numbers = ["1", "2", "3", "4", "5", "6","7", "8","9","0"]
-        ReservedWords = ["printf", "scanf", "if", "while"]
+        ReservedWords = ["printf", "scanf", "if", "while", "else"]
         
     # pula os espcos em branco e \n com while
     # começa os ifs
@@ -317,6 +317,7 @@ class Parser:
 
         if(Parser.token.actual.type == "ID"):
             node = Parser.token.actual.value
+
             Parser.token.selectNext()
 
 
@@ -524,7 +525,7 @@ class Parser:
             Parser.token.selectNext() 
             return UnOp("minus", [Parser.parseFactor()]) ### Recursion
 
-        elif(Parser.token.actual.type == "diff"):
+        elif(Parser.token.actual.type == "not"):
             Parser.token.selectNext() 
             return UnOp("not", [Parser.parseFactor()]) ### Recursion
 
@@ -540,8 +541,9 @@ class Parser:
 
 
         elif(Parser.token.actual.type == "scanf"):
+            Parser.token.selectNext()
             if(Parser.token.actual.type == "open_p"):
-                node = SCANF()
+                node = SCANF(Node)
                 Parser.token.selectNext()
                 if(Parser.token.actual.type == "close_p"):
                     Parser.token.selectNext()
@@ -559,6 +561,7 @@ class Parser:
 
 
         else:
+
             sys.stderr.write("Token invalido na posicao")
             raise ValueError
   
