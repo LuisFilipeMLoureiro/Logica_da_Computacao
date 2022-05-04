@@ -588,7 +588,7 @@ if ".c" in sys.argv[1]:
 
         
 else:
-    sys.stderr.write("Must be a .c file!")
+    sys.stderr.write("Must be a .c file !")
     raise ValueError
 
 
