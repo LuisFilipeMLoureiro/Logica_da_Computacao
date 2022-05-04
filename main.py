@@ -69,7 +69,7 @@ class WHILE(Node):
         while self.children[0].Evaluate():
             self.children[1].Evaluate()
 
-class SCANF():
+class SCANF(Node):
     def Evaluate(self):
         resultado =  int(input())
         return resultado
@@ -82,6 +82,11 @@ class IF(Node):
         elif len(self.children) > 2:
             self.children[2].Evaluate()
 
+
+class Block(Node):
+    def Evaluate(self):
+        for n in self.children:
+            n.Evaluate()
 
 class IntVal(Node):
     def Evaluate(self):
@@ -142,16 +147,19 @@ class Tokenizer:
     
     def selectNext(self):
         
-        valid_tokens = [" ", "+" "-", "", "*", "/", "(", ")", ";", "{", "}"]
+    
         numero = ""
         numbers = ["1", "2", "3", "4", "5", "6","7", "8","9","0"]
-        ReservedWords = ["printf"]
+        ReservedWords = ["printf", "scanf", "if", "while"]
         
-
+    # pula os espcos em branco e \n com while
+    # começa os ifs
+    #erro eh para dar no parser
         while(self.position <= len(self.origin) - 1):
             i = self.origin[self.position]
 
-            if i in numbers:                
+            if i in numbers:
+                                
                 numero += i 
                                          
             elif (numero != ""):                
@@ -289,22 +297,18 @@ class Parser:
             raise ValueError 
 
         Parser.token.selectNext()
-        while(Parser.token.actual.type != "close_block"):
-
+        while(Parser.token.actual.type != "close_block"):    
             result = Parser.parseStatement()
             nodes.append(result)
 
-
-
         Parser.token.selectNext()
-        return nodes
+        return Block("", nodes)
 
 
     @staticmethod
     def parseStatement():
 
         node = NoOp(None)
-
 
         if(Parser.token.actual.type == "END"):
             Parser.token.selectNext()
@@ -331,6 +335,7 @@ class Parser:
                 raise ValueError
         
         elif(Parser.token.actual.type == "printf"):
+
             Parser.token.selectNext()
 
             if(Parser.token.actual.type == "open_p"):
@@ -362,10 +367,13 @@ class Parser:
                 Parser.token.selectNext()
                 result = Parser.parseRelExpression()
                 
+                
                 if(Parser.token.actual.type == "close_p"):
-                    Parser.token.selectNext()
+                    Parser.token.selectNext()                  
                     result2 = Parser.parseStatement()
-                    node = WHILE(result, result2)
+                    node = WHILE("", [result, result2])
+                    return node
+                    
 
                 else:
                     sys.stderr.write("Missing closing parenteses in while")
@@ -383,27 +391,33 @@ class Parser:
                 Parser.token.selectNext()
                 result = Parser.parseRelExpression()
 
+
                 if(Parser.token.actual.type == "close_p"):
                     Parser.token.selectNext()
-                    result2 = Parser.parseStatement()
-                    
+                    result2 = Parser.parseStatement()      
 
                     if(Parser.token.actual.type == "else"):
                         Parser.token.selectNext()
                         result3 = Parser.parseStatement()
-                        node = IF(result, result2, result3)
+                        node = IF("",[result, result2, result3])
+                        return node
                         
                     else:                        
-                        node = IF(result, result2)
+                        node = IF("",[result, result2])
+                        return node
+
 
                 else:
-                    sys.stderr.write("Missing closing parenteses in if")
+                    sys.stderr.write("Missing opening parenteses in if")
                     raise ValueError
 
             else:
                 sys.stderr.write("Missing opening parenteses in if")
                 raise ValueError
-   
+
+        else:
+            node = Parser.parseBlock()
+            return node
 
     @staticmethod
     def parseRelExpression():
@@ -460,7 +474,7 @@ class Parser:
     def parseTerm():       
         
         result = Parser.parseFactor()
-        Parser.token.selectNext()
+        #Parser.token.selectNext()
     
 
         if (type(result) == int) & (Parser.token.actual.type == "int"):
@@ -468,7 +482,7 @@ class Parser:
             raise ValueError
 
 
-        while(Parser.token.actual.type == "mult" or Parser.token.actual.type == "div" or Parser.token.actual.type == "and"):       
+        while(Parser.token.actual.type == "mult" or Parser.token.actual.type == "div" or Parser.token.actual.type == "and"):
             if(Parser.token.actual.type == "mult"):
                 Parser.token.selectNext()
                 result = BinOp("mult", [result, Parser.parseFactor()])
@@ -485,8 +499,7 @@ class Parser:
                 result = BinOp("and", [result, Parser.parseFactor()])
                     
 
-            Parser.token.selectNext()
-
+            #Parser.token.selectNext()
         return result
 
     @staticmethod
@@ -495,11 +508,12 @@ class Parser:
         if(Parser.token.actual.type == "int"):
             number = int(Parser.token.actual.value) 
             result = IntVal(number)
+            Parser.token.selectNext()
             return result
         
         elif(Parser.token.actual.type == "ID"):
-
             result = Parser.token.actual.value
+            Parser.token.selectNext()
             return Identifier(result)
 
         elif(Parser.token.actual.type == "plus"):
@@ -553,25 +567,29 @@ class Parser:
     def run(codigo_fonte):
         codigo_base = PrePro.filter(codigo_fonte)
         Parser.token = Tokenizer(codigo_base)
-        Parser.token.selectNext()
+        Parser.token.selectNext()      
+
         result = Parser.parseBlock() #result é a arvore de nodes
 
 
         if Parser.token.actual.type != "EOF":
             sys.stderr.write("Codigo fonte não foi inteiro consumido!")
             raise ValueError
+            
  
-        for node in result:
-            node.Evaluate() #retorna valor final da arvore
-
+        else:
+            return result
+            
 
 if ".c" in sys.argv[1]:
     with open(sys.argv[1], "r") as file:
-        Parser.run(file.read())
+        result = Parser.run(file.read())
+        result.Evaluate()
 
         
 else:
-    print("Must be a c file!")
+    sys.stderr.write("Must be a .c file!")
+    raise ValueError
 
 
 
