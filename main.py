@@ -17,52 +17,69 @@ class BinOp(Node):
     def Evaluate(self):
         cria1 = self.children[0].Evaluate()
         cria2 = self.children[1].Evaluate()
-        if self.value == "plus":
-            result = cria1 + cria2
 
-        elif self.value == "minus":
-            result  = cria1 - cria2
+        if cria1[1] == "int" & cria2[1] == "int":
+            if self.value == "plus":
+                result = cria1[0] + cria2[0]
 
-        elif self.value == "mult":
-            result  = cria1 * cria2
+            elif self.value == "minus":
+                result  = cria1[0] - cria2[0]
 
-        elif self.value == "div":
-            result  = int(cria1 / cria2)
+            elif self.value == "mult":
+                result  = cria1[0] * cria2[0]
 
-        elif self.value == "doubleEqual":
-            result = (cria1 == cria2)
+            elif self.value == "div":
+                result  = int(cria1[0] / cria2[0])
 
-        elif self.value == "and":
-            result = (cria1 and cria2)
+            elif self.value == "doubleEqual":
+                result = (cria1[0] == cria2[0])
 
-        elif self.value == "above":
-            result = (cria1 > cria2)
+            elif self.value == "and":
+                result = (cria1[0] and cria2[0])
 
-        elif self.value == "below":
-            result = (cria1 < cria2)
+            elif self.value == "above":
+                result = (cria1[0] > cria2[0])
 
-        elif self.value == "or":
-            result = (cria1 or cria2)
-        else:
-            sys.stderr.write("Erro no BinOp!")
-            raise ValueError
+            elif self.value == "below":
+                result = (cria1[0] < cria2[0])
 
-        return int(result)
+            elif self.value == "or":
+                result = (cria1[0] or cria2[0])
+            else:
+                sys.stderr.write("Invalid operation with integer in BinOp!")
+                raise ValueError
+
+            return (int(result), "int")
+
+        elif cria1[1] == "str" or cria2[1] == "str":
+            if self.value == "concat":
+                result = cria1[0] + cria2[0]
+                return (int(result), "str")
+            else:
+                sys.stderr.write("Invalid operation with string in BinOp!")
+                raise ValueError
+
+
 
 class UnOp(Node):
     def Evaluate(self):
         result = self.children[0].Evaluate()
 
-        if self.value == "minus":
-            result = result * -1
-        elif self.value == "plus":
-            result = result
-        elif self.value == "not":
-            result = not(result)
+        if result[1] == "int":
+            if self.value == "minus":
+                result[0] = result[0] * -1
+            elif self.value == "plus":
+                result[0] = result[0]
+            elif self.value == "not":
+                result[0] = not(result[0])
+        else:
+            sys.stderr.write("Must be a int to be operated!")
+            raise ValueError
 
 
 
-        return int(result)
+
+        return (int(result), "int")
 
 class WHILE(Node):
     def Evaluate(self):
@@ -72,7 +89,7 @@ class WHILE(Node):
 class SCANF(Node):
     def Evaluate(self):
         resultado =  int(input())
-        return resultado
+        return (resultado, "int")
 
 class IF(Node):
     def Evaluate(self):
@@ -90,7 +107,7 @@ class Block(Node):
 
 class IntVal(Node):
     def Evaluate(self):
-        return self.value
+        return (self.value, "int")
 
 class NoOp(Node):
     def Evaluate(self):
@@ -98,18 +115,35 @@ class NoOp(Node):
 
 dic_SymbolTable = {}
 class SymbolTable:
-    @staticmethod
-    def getter(chave):
-        return dic_SymbolTable[chave]
 
     @staticmethod
-    def setter(chave, valor):
-        dic_SymbolTable[chave] = valor
+    def create(nome, tipo):
+        dic_SymbolTable[nome] = (None, tipo)
+        
+
+    @staticmethod
+    def getter(chave):
+        return dic_SymbolTable[chave][0]
+
+    @staticmethod
+    def setter(nome, valor):
+        if nome in dic_SymbolTable:
+            if valor[1] == dic_SymbolTable[nome][1]:
+                dic_SymbolTable[nome] = (valor[0], valor[1])
+
+            else:
+                sys.stderr.write("Invalid association")
+                raise ValueError 
+        else:
+            sys.stderr.write("Not declared")
+            raise ValueError 
+
 
 class Assignment(Node):
     def Evaluate(self):
         cria1 = self.children[0]
         cria2 = self.children[1].Evaluate()
+        
 
         SymbolTable.setter(cria1, cria2)
 
@@ -122,6 +156,17 @@ class Identifier(Node):
     def Evaluate(self):
         variavel = SymbolTable.getter(self.value)
         return(variavel)
+
+class Strval(Node):
+    def Evaluate(self):
+        return(self.value, "str")
+
+class Vardec(Node):
+    def Evaluate(self):
+        _value = self.value
+        for ident in self.children:
+            SymbolTable.create(ident.value, _value)
+        
 
 
 #https://stackoverflow.com/questions/241327/remove-c-and-c-comments-using-python
@@ -150,7 +195,7 @@ class Tokenizer:
     
         numero = ""
         numbers = ["1", "2", "3", "4", "5", "6","7", "8","9","0"]
-        ReservedWords = ["printf", "scanf", "if", "while", "else"]
+        ReservedWords = ["printf", "scanf", "if", "while", "else", "int", "str"]
         
     # pula os espcos em branco e \n com while
     # começa os ifs
@@ -229,6 +274,15 @@ class Tokenizer:
                 self.position +=1
                 return self.actual
 
+            if i == ".":
+                self.actual = Token("concat", ".")
+                self.position +=1
+                return self.actual
+            if i == ",":
+                self.actual = Token("comma", ",")
+                self.position +=1
+                return self.actual
+
             if i == "&":
                 self.position +=1
                 if self.origin[self.position] == "&":
@@ -262,18 +316,38 @@ class Tokenizer:
 
                 return self.actual
 
+            
+
             variavel = ""
+            if "\"" == i:
+                self.position += 1
+                while self.origin[self.position] != ("\""):
+                    variavel += self.origin[self.position]
+                    self.position += 1
+                
+                self.position += 1
+                self.actual = Token("str",variavel)
+                return self.actual
+
             if(self.origin[self.position].isalpha()):          
                 while(self.position < len(self.origin)-1) and (self.origin[self.position].isnumeric() or self.origin[self.position].isalpha() or self.origin[self.position] == "_" ):
                     variavel += self.origin[self.position]
                     self.position += 1
                 if variavel in ReservedWords:
-                    self.actual = Token(variavel,variavel)
+                    if variavel == "str":
+                        self.actual = Token("type","str")
+                    elif variavel == "int":
+                        self.actual = Token("type","int")
+                    else:
+                        self.actual = Token(variavel,variavel)
                     
                 else:
                     self.actual = Token("ID",variavel)
             
                 return self.actual
+            
+
+
 
             #if (i in numbers) or (i  in valid_tokens):
             self.position +=1 
@@ -317,6 +391,8 @@ class Parser:
 
         if(Parser.token.actual.type == "ID"):
             node = Parser.token.actual.value
+            
+            
 
             Parser.token.selectNext()
 
@@ -331,9 +407,12 @@ class Parser:
                 else: 
                     sys.stderr.write("Missing closing token ;")
                     raise ValueError  
+
             else:
                 sys.stderr.write("Missing =")
                 raise ValueError
+        
+
         
         elif(Parser.token.actual.type == "printf"):
 
@@ -361,7 +440,34 @@ class Parser:
             else:
                 sys.stderr.write("Missing opening parenteses")
                 raise ValueError
+        elif(Parser.token.actual.type == "type"):
 
+            if (Parser.token.actual.value) == "int":
+                result = Vardec("int", [])
+                
+            elif(Parser.token.actual.value) == "str":
+                result = Vardec("str", [])
+                
+            
+            Parser.token.selectNext()
+            #if type == id else error
+            variavel = Parser.token.actual.value
+            result.children.append(Identifier(variavel))
+            Parser.token.selectNext()
+           
+
+            while Parser.token.actual.type == "comma":
+                Parser.token.selectNext()
+                #if type == id else error
+                variavel = Parser.token.actual.value
+                result.children.append(Identifier(variavel))
+                Parser.token.selectNext()
+            
+            #testar se é ponto e virgula else error
+            Parser.token.selectNext()
+
+            return result
+        
         elif(Parser.token.actual.type == "while"):
             Parser.token.selectNext()
             if(Parser.token.actual.type == "open_p"):
@@ -461,7 +567,10 @@ class Parser:
 
             if(Parser.token.actual.type == "or"):
                 Parser.token.selectNext()
-                result = BinOp("or", [result, Parser.parseTerm()])            
+                result = BinOp("or", [result, Parser.parseTerm()])
+            if(Parser.token.actual.type == "concat"):
+                Parser.token.selectNext()
+                result = BinOp("concat", [result, Parser.parseTerm()])  
 
             
             
@@ -504,11 +613,18 @@ class Parser:
         return result
 
     @staticmethod
-    def parseFactor():  
+    def parseFactor():
+        
 
         if(Parser.token.actual.type == "int"):
             number = int(Parser.token.actual.value) 
             result = IntVal(number)
+            Parser.token.selectNext()
+            return result
+
+        if(Parser.token.actual.type == "str"):
+            number = Parser.token.actual.value
+            result = Strval(number)
             Parser.token.selectNext()
             return result
         
@@ -570,8 +686,8 @@ class Parser:
     def run(codigo_fonte):
         codigo_base = PrePro.filter(codigo_fonte)
         Parser.token = Tokenizer(codigo_base)
-        Parser.token.selectNext()      
-
+        Parser.token.selectNext()     
+        
         result = Parser.parseBlock() #result é a arvore de nodes
 
 
@@ -582,7 +698,7 @@ class Parser:
  
         else:
             return result
-            
+          
 
 if ".c" in sys.argv[1]:
     with open(sys.argv[1], "r") as file:
