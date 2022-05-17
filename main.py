@@ -148,7 +148,6 @@ class SymbolTable:
 
     @staticmethod
     def getter(chave):
-        print(dic_SymbolTable[chave])
         return dic_SymbolTable[chave]
 
     @staticmethod
