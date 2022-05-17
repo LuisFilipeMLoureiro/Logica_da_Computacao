@@ -15,11 +15,13 @@ class Node():
 class BinOp(Node):
 
     def Evaluate(self):
+
         cria1 = self.children[0].Evaluate()
         cria2 = self.children[1].Evaluate()
 
-        if cria1[1] == "int" & cria2[1] == "int":
+        if (cria1[1] == "int") and (cria2[1] == "int"):
             if self.value == "plus":
+                
                 result = cria1[0] + cria2[0]
 
             elif self.value == "minus":
@@ -53,8 +55,8 @@ class BinOp(Node):
 
         elif cria1[1] == "str" or cria2[1] == "str":
             if self.value == "concat":
-                result = cria1[0] + cria2[0]
-                return (int(result), "str")
+                result = str(cria1[0]) + str(cria2[0])
+                return (str(result), "str")
             else:
                 sys.stderr.write("Invalid operation with string in BinOp!")
                 raise ValueError
@@ -123,7 +125,7 @@ class SymbolTable:
 
     @staticmethod
     def getter(chave):
-        return dic_SymbolTable[chave][0]
+        return dic_SymbolTable[chave]
 
     @staticmethod
     def setter(nome, valor):
@@ -150,12 +152,12 @@ class Assignment(Node):
 class Printf(Node):
     def Evaluate(self):
         cria1 = self.children.Evaluate()
-        print(cria1)
+        print(cria1[0])
 
 class Identifier(Node):
     def Evaluate(self):
         variavel = SymbolTable.getter(self.value)
-        return(variavel)
+        return(variavel[0],variavel[1])
 
 class Strval(Node):
     def Evaluate(self):
@@ -421,7 +423,6 @@ class Parser:
             if(Parser.token.actual.type == "open_p"):
                 Parser.token.selectNext()
                 result = Parser.parseRelExpression()
-
                 if(Parser.token.actual.type == "close_p"):
                     node = Printf("printf", result) 
                     Parser.token.selectNext()
@@ -554,7 +555,7 @@ class Parser:
         result = Parser.parseTerm()
 
 
-        while(Parser.token.actual.type == "plus" or Parser.token.actual.type == "minus" or Parser.token.actual.type == "or" ):       
+        while(Parser.token.actual.type == "plus" or Parser.token.actual.type == "minus" or Parser.token.actual.type == "or" or Parser.token.actual.type == "concat" ):       
 
             if(Parser.token.actual.type == "plus"): 
                 Parser.token.selectNext()                   
