@@ -57,7 +57,7 @@ class BinOp(Node):
 
             return (int(result), "int")
 
-        elif cria1[1] == "str" or cria2[1] == "str":
+        elif (cria1[1] == "str") and (cria2[1] == "str"):
             if self.value == "concat":
                 result = str(cria1[0]) + str(cria2[0])
                 return (str(result), "str")
@@ -72,9 +72,17 @@ class BinOp(Node):
                 result = (str(cria1[0]) < str(cria2[0]))
                 return (int(result), "int")
 
-
             else:
                 sys.stderr.write("Invalid operation with string in BinOp!")
+                raise ValueError
+        
+        elif (cria1[1] == "str") or (cria2[1] == "str"):
+            if self.value == "concat":
+                result = str(cria1[0]) + str(cria2[0])
+                return (str(result), "str")
+
+            else:
+                sys.stderr.write("Invalid operation with string and int in BinOp!")
                 raise ValueError
 
 
