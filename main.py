@@ -47,6 +47,10 @@ class BinOp(Node):
 
             elif self.value == "or":
                 result = (cria1[0] or cria2[0])
+
+            elif self.value == "concat":
+                result = str(cria1[0]) + str(cria2[0])
+                return (str(result), "str")
             else:
                 sys.stderr.write("Invalid operation with integer in BinOp!")
                 raise ValueError
@@ -57,6 +61,18 @@ class BinOp(Node):
             if self.value == "concat":
                 result = str(cria1[0]) + str(cria2[0])
                 return (str(result), "str")
+
+            if self.value == "doubleEqual":
+                result = str(cria1[0]) == str(cria2[0])
+                return (int(result), "int")
+            elif self.value == "above":
+                result = (str(cria1[0]) > str(cria2[0]))
+                return (int(result), "int")
+            elif self.value == "below":
+                result = (str(cria1[0]) < str(cria2[0]))
+                return (int(result), "int")
+
+
             else:
                 sys.stderr.write("Invalid operation with string in BinOp!")
                 raise ValueError
@@ -67,13 +83,14 @@ class UnOp(Node):
     def Evaluate(self):
         result = self.children[0].Evaluate()
 
+         
         if result[1] == "int":
             if self.value == "minus":
-                result[0] = result[0] * -1
+                output = result[0] * -1
             elif self.value == "plus":
-                result[0] = result[0]
+                output = result[0]
             elif self.value == "not":
-                result[0] = not(result[0])
+                output = not(result[0])
         else:
             sys.stderr.write("Must be a int to be operated!")
             raise ValueError
@@ -81,11 +98,11 @@ class UnOp(Node):
 
 
 
-        return (int(result), "int")
+        return (int(output), "int")
 
 class WHILE(Node):
     def Evaluate(self):
-        while self.children[0].Evaluate():
+        while self.children[0].Evaluate()[0]:
             self.children[1].Evaluate()
 
 class SCANF(Node):
@@ -120,11 +137,18 @@ class SymbolTable:
 
     @staticmethod
     def create(nome, tipo):
-        dic_SymbolTable[nome] = (None, tipo)
+
+        if nome in dic_SymbolTable:
+            sys.stderr.write("Invalid casting or more than one declaration of variable")
+            raise ValueError 
+        else:
+            dic_SymbolTable[nome] = (None, tipo)
+        
         
 
     @staticmethod
     def getter(chave):
+        print(dic_SymbolTable[chave])
         return dic_SymbolTable[chave]
 
     @staticmethod
