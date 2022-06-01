@@ -1,51 +1,188 @@
 import sys
 import re
+import os
 
+programe_name = "program.asm"
+
+class ASM():
+    code = '''
+; constantes
+SYS_EXIT equ 1
+SYS_READ equ 3
+SYS_WRITE equ 4
+STDIN equ 0
+STDOUT equ 1
+True equ 1
+False equ 0
+
+segment .data
+
+segment .bss  ; variaveis
+  res RESB 1
+
+section .text
+  global _start
+
+print:  ; subrotina print
+
+  PUSH EBP ; guarda o base pointer
+  MOV EBP, ESP ; estabelece um novo base pointer
+
+  MOV EAX, [EBP+8] ; 1 argumento antes do RET e EBP
+  XOR ESI, ESI
+
+print_dec: ; empilha todos os digitos
+  MOV EDX, 0
+  MOV EBX, 0x000A
+  DIV EBX
+  ADD EDX, '0'
+  PUSH EDX
+  INC ESI ; contador de digitos
+  CMP EAX, 0
+  JZ print_next ; quando acabar pula
+  JMP print_dec
+
+print_next:
+  CMP ESI, 0
+  JZ print_exit ; quando acabar de imprimir
+  DEC ESI
+
+  MOV EAX, SYS_WRITE
+  MOV EBX, STDOUT
+
+  POP ECX
+  MOV [res], ECX
+  MOV ECX, res
+
+  MOV EDX, 1
+  INT 0x80
+  JMP print_next
+
+print_exit:
+  POP EBP
+  RET
+
+; subrotinas if/while
+binop_je:
+  JE binop_true
+  JMP binop_false
+
+binop_jg:
+  JG binop_true
+  JMP binop_false
+
+binop_jl:
+  JL binop_true
+  JMP binop_false
+
+binop_false:
+  MOV EBX, False
+  JMP binop_exit
+binop_true:
+  MOV EBX, True
+binop_exit:
+  RET
+
+_start:
+
+  PUSH EBP ; guarda o base pointer
+  MOV EBP, ESP ; estabelece um novo base pointer
+
+  ; codigo gerado pelo compilador''' + '\n'
+    rodape = """; interrupcao de saida
+POP EBP
+MOV EAX, 1
+INT 0x80
+"""
+
+    @staticmethod
+    def write(cmd):
+        ASM.code += (cmd + '\n')
+
+    @staticmethod
+    def dump(): 
+        with open(programe_name, 'w') as f:
+            f.write(ASM.code)
+        ASM.code += ASM.rodape
 
 
 class Node():   
+    Id = 0
 
     def __init__(self, value, ListOfNodes = []):
         self.value = value
         self.children = ListOfNodes
+        
 
     def Evaluate(self):
         pass
+
+    def UpdateId():
+        Node.Id +=1
+        return Node.Id
 
 class BinOp(Node):
 
     def Evaluate(self):
 
         cria1 = self.children[0].Evaluate()
+        ASM.write("PUSH EBX")
         cria2 = self.children[1].Evaluate()
+        ASM.write("; codigo gerado pelo BinOp" )
 
         if (cria1[1] == "int") and (cria2[1] == "int"):
             if self.value == "plus":
-                
+                ASM.write("POP EAX")
+                ASM.write("ADD EAX, EBX" )
+                ASM.write("MOV EBX, EAX")
                 result = cria1[0] + cria2[0]
 
             elif self.value == "minus":
+                ASM.write("POP EAX" )
+                ASM.write("SUB EAX, EBX" )
+                ASM.write("MOV EBX, EAX" )
                 result  = cria1[0] - cria2[0]
 
             elif self.value == "mult":
+                ASM.write("POP EAX" )
+                ASM.write("IMUL EBX" )
+                ASM.write("MOV EBX, EAX" )
                 result  = cria1[0] * cria2[0]
 
             elif self.value == "div":
+                ASM.write("POP EAX" )
+                ASM.write("IDIV EBX" )
+                ASM.write("MOV EBX, EAX" )
                 result  = int(cria1[0] / cria2[0])
 
             elif self.value == "doubleEqual":
-                result = (cria1[0] == cria2[0])
+                ASM.write("POP EAX")
+                ASM.write("CMP EAX, EBX")
+                ASM.write("CALL binop_je")
+                result = bool(cria1[0] == cria2[0])
 
             elif self.value == "and":
+                ASM.write("POP EAX" )
+                ASM.write("AND  EAX, EBX" )
+                ASM.write("MOV EBX, EAX" )
                 result = (cria1[0] and cria2[0])
 
             elif self.value == "above":
-                result = (cria1[0] > cria2[0])
+                ASM.write("POP EAX")
+                ASM.write("CMP EAX, EBX")
+                ASM.write("CALL binop_jg")
+                result = bool(cria1[0] > cria2[0])
 
             elif self.value == "below":
-                result = (cria1[0] < cria2[0])
+                ASM.write("POP EAX")
+                ASM.write("CMP EAX, EBX")
+                ASM.write("CALL binop_jl")
+                result = bool(cria1[0] < cria2[0])
 
             elif self.value == "or":
+                ASM.write("POP EAX" )
+                ASM.write("OR  EAX, EBX" )
+                ASM.write("MOV EBX, EAX " )
                 result = (cria1[0] or cria2[0])
 
             elif self.value == "concat":
@@ -87,17 +224,23 @@ class BinOp(Node):
 
 
 
-class UnOp(Node):
+class UnOp(Node): #ok
     def Evaluate(self):
         result = self.children[0].Evaluate()
 
          
         if result[1] == "int":
             if self.value == "minus":
+                ASM.write("MOV EAX,{result[0]}")
+                ASM.write("MOV EBX,-1")
+                ASM.write("IMUL EBX")
+                ASM.write("MOV EBX,EAX")
                 output = result[0] * -1
             elif self.value == "plus":
                 output = result[0]
             elif self.value == "not":
+                ASM.write("NEG EBX")
+                ASM.write("MOV EBX, EAX")
                 output = not(result[0])
         else:
             sys.stderr.write("Must be a int to be operated!")
@@ -108,49 +251,90 @@ class UnOp(Node):
 
         return (int(output), "int")
 
-class WHILE(Node):
+class WHILE(Node): #REVER
     def Evaluate(self):
-        while self.children[0].Evaluate()[0]:
-            self.children[1].Evaluate()
+        new_id = Node.UpdateId()
+        ASM.write("LOOP_" + str(new_id) + ":")
+        cria1 = self.children[0].Evaluate()[0]
+        ASM.write("CMP EBX, False")
+        ASM.write("JE EXIT_" + str(new_id) )
+        self.children[1].Evaluate()
+        ASM.write("JMP LOOP_" + str(new_id) )
+        ASM.write("EXIT_"+ str(new_id) + ":" )
 
-class SCANF(Node):
+        #while self.children[0].Evaluate()[0]:
+         #   self.children[1].Evaluate()
+
+class SCANF(Node): #ok
     def Evaluate(self):
         resultado =  int(input())
         return (resultado, "int")
 
-class IF(Node):
+class IF(Node): #ok
     def Evaluate(self):
-        if self.children[0].Evaluate():
+        new_id = Node.UpdateId()
+
+        ASM.write("IF_"+str(new_id)+":" )
+        cria1 = self.children[0].Evaluate()
+        ASM.write("CMP EBX, False")
+
+        if len(self.children) > 2:
+            ASM.write("JE ELSE_" + str(new_id) )
             self.children[1].Evaluate()
-
-        elif len(self.children) > 2:
+            ASM.write("JMP EXIT_" + str(new_id) )
+            ASM.write("ELSE_"+ str(new_id) + ":" )
             self.children[2].Evaluate()
+            ASM.write("EXIT_"+ str(new_id) + ":" )
+        else:
+            ASM.write("JE EXIT_" + str(new_id) )
+            self.children[1].Evaluate()
+            ASM.write("JMP EXIT_" + str(new_id) )
+            ASM.write("EXIT_"+ str(new_id) + ":" )
 
 
-class Block(Node):
+
+
+        #if self.children[0].Evaluate():
+         #   self.children[1].Evaluate()
+
+        #elif len(self.children) > 2:
+         #   self.children[2].Evaluate()
+
+
+class Block(Node): #ok
     def Evaluate(self):
         for n in self.children:
             n.Evaluate()
 
-class IntVal(Node):
+class IntVal(Node): #ok
     def Evaluate(self):
+        ASM.write("MOV EBX," + str(self.value))
         return (self.value, "int")
 
-class NoOp(Node):
+class NoOp(Node): #ok
     def Evaluate(self):
         pass
 
 dic_SymbolTable = {}
-class SymbolTable:
+
+class SymbolTable: #ok
+    
+    
 
     @staticmethod
     def create(nome, tipo):
+        global SymbolId
+        
+        if not(dic_SymbolTable):
+            SymbolId = -4
+        else:
+            SymbolId -= 4
 
         if nome in dic_SymbolTable:
             sys.stderr.write("Invalid casting or more than one declaration of variable")
             raise ValueError 
         else:
-            dic_SymbolTable[nome] = (None, tipo)
+            dic_SymbolTable[nome] = [None, tipo, SymbolId]
         
         
 
@@ -158,11 +342,12 @@ class SymbolTable:
     def getter(chave):
         return dic_SymbolTable[chave]
 
+
     @staticmethod
     def setter(nome, valor):
         if nome in dic_SymbolTable:
             if valor[1] == dic_SymbolTable[nome][1]:
-                dic_SymbolTable[nome] = (valor[0], valor[1])
+                dic_SymbolTable[nome][0] = valor[0]
 
             else:
                 sys.stderr.write("Invalid association")
@@ -172,25 +357,30 @@ class SymbolTable:
             raise ValueError 
 
 
-class Assignment(Node):
+class Assignment(Node): #ok
     def Evaluate(self):
         cria1 = self.children[0]
-        cria2 = self.children[1].Evaluate()
-        
+        cria2 = self.children[1].Evaluate()     
 
         SymbolTable.setter(cria1, cria2)
+        info_var = SymbolTable.getter(cria1) #REVER
+        ASM.write("MOV [EBP " + str(info_var[2]) + "], EBX")
 
-class Printf(Node):
+class Printf(Node): #ok
     def Evaluate(self):
         cria1 = self.children.Evaluate()
-        print(cria1[0])
+        #print(cria1[0])
+        ASM.write("PUSH EBX")
+        ASM.write("CALL print")
+        ASM.write("POP EBX")
 
-class Identifier(Node):
+class Identifier(Node): #ok
     def Evaluate(self):
         variavel = SymbolTable.getter(self.value)
+        ASM.write("MOV EBX, [EBP" + str(variavel[2]) + "]")
         return(variavel[0],variavel[1])
 
-class Strval(Node):
+class Strval(Node): #ok
     def Evaluate(self):
         return(self.value, "str")
 
@@ -199,6 +389,7 @@ class Vardec(Node):
         _value = self.value
         for ident in self.children:
             SymbolTable.create(ident.value, _value)
+            ASM.write("PUSH DWORD 0")
         
 
 
@@ -736,16 +927,10 @@ if ".c" in sys.argv[1]:
     with open(sys.argv[1], "r") as file:
         result = Parser.run(file.read())
         result.Evaluate()
+        ASM.dump()
 
         
 else:
     sys.stderr.write("Must be a .c file !")
     raise ValueError
-
-
-
-
-
-
-
 
