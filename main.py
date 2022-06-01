@@ -2,7 +2,7 @@ import sys
 import re
 import os
 
-programe_name = "program.asm"
+programe_name = sys.argv[1]
 
 class ASM():
     code = '''
@@ -101,7 +101,7 @@ INT 0x80
 
     @staticmethod
     def dump(): 
-        with open(programe_name, 'w') as f:
+        with open((programe_name[:-1] + "asm"), 'w') as f:
             f.write(ASM.code)
         ASM.code += ASM.rodape
 
