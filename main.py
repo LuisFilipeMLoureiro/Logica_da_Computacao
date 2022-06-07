@@ -193,7 +193,7 @@ class SymbolTable:
 class FuncDec(Node):
     def Evaluate(self, st):
         vardec = self.children[0]
-        neto = vardec.children[0].value
+        neto = vardec.children
         FuncTable.create(neto, self, vardec.value)
 
 
@@ -264,7 +264,7 @@ class Vardec(Node):
     def Evaluate(self, st):
         _value = self.value
         for ident in self.children:
-            SymbolTable.create(ident.value, _value)
+            SymbolTable.create(st, ident.value, _value)
 
             
         
@@ -468,49 +468,60 @@ class Parser:
 
     @staticmethod
     def parseDeclaration():
-        result = NoOp()
+        
         filhos = []
-        if(Parser.tokens.actual.type == "type"):
-            funcType = Parser.tokens.actual.value
-            Parser.tokens.selectNext()
-            if(Parser.tokens.actual.type == "ID"):
-                funcID = Parser.tokens.actual.value
+        
+        if(Parser.token.actual.type == "type"):
+            funcType = Parser.token.actual.value
+            Parser.token.selectNext()
+            if(Parser.token.actual.type == "ID"):
+                funcID = Parser.token.actual.value
                 arg0 = Vardec(funcType, funcID)
                 filhos.append(arg0)
-                Parser.tokens.selectNext()
-                if(Parser.tokens.actual.type == "open_p"):
-                    Parser.tokens.selectNext()
+                Parser.token.selectNext()
 
-                    if(Parser.tokens.actual.type == "close_p"):
-                        Parser.tokens.selectNext()
+                if(Parser.token.actual.type == "open_p"):
+                    Parser.token.selectNext()
+
+                    if(Parser.token.actual.type == "close_p"):
+                        Parser.token.selectNext()
+            
                         result = Parser.parseBlock()
 
                     # !Duvida! Nao entendi o que devo fazer com a lista de argumentos
                     else:
                         
-                        while(Parser.tokens.actual.type != "close_p"):
-                            if(Parser.tokens.actual.type == "type"):
-                                typevar = Parser.tokens.actual.value
-                                Parser.tokens.selectNext()                                
-                                if(Parser.tokens.actual.type == "ID"):
-                                    nomevar = Parser.tokens.actual.value
-                                    filhos.append(Vardec(typevar,nomevar))
-                                    Parser.tokens.selectNext()                                   
+                        while(Parser.token.actual.type != "close_p"):
+                            print("aqui")
+                            if(Parser.token.actual.type == "type"):
+                                typevar = Parser.token.actual.value
+                                Parser.token.selectNext()                                
+                                if(Parser.token.actual.type == "ID"):
+                                    nomevar = Parser.token.actual.value
+                                    filhos.append(Vardec(typevar, nomevar))
+                                    Parser.token.selectNext()                                   
                                 
 
-                                if(Parser.tokens.actual.type == "close_p"):
+                                if(Parser.token.actual.type == "close_p"):
                                     break
-                                if(Parser.tokens.actual.type == "comma"):
-                                    Parser.tokens.selectNext()
-                                    if(Parser.tokens.actual.type == "close_p"):
+                                if(Parser.token.actual.type == "comma"):
+                                    Parser.token.selectNext()
+                                    if(Parser.token.actual.type == "close_p"):
                                         sys.stderr.write("Extra comma in function declaration")
                                         raise ValueError
+                            else:
+                                sys.stderr.write("Missing type of argument in function")
+                                raise ValueError
                         
                         #DUVIDA: como fazer o block para carregar todo o conteudo da funcao
+                        
+                        Parser.token.selectNext()
+                        print("saindo", Parser.token.actual.value)
                         block = Parser.parseBlock() 
                         filhos.append(block)
                         
-                        result = FuncDec("FUNCTION", filhos)
+                        result = FuncDec(nomevar, filhos)
+                        return result
 
 
                 else:
@@ -520,20 +531,24 @@ class Parser:
             else:
                 sys.stderr.write("Missing function name")
                 raise ValueError 
-        return result
+        else:
+            sys.stderr.write("Missinga functiona at the start")
+            raise ValueError 
+        
 
     # !Duvida! Verificar o parseProgram
     @staticmethod
     def parseProgram(): #while no EOF
-        nodeBlock = Block("", [])
+        nodes = []
         while(Parser.token.actual.type != "EOF"):
-            nodeBlock.children.append(Parser.parseDeclaration)
-
-        nodeBlock.append(FuncCall("main",[]))
             
-        return nodeBlock
+            nodes.append(Parser.parseDeclaration())
 
-    @staticmethod #devo alterar o parse block?
+        
+            
+        return Block("Block", nodes)
+
+    @staticmethod #ok
     def parseBlock():
         nodes = []
         if (Parser.token.actual.type != "open_block"):
@@ -564,7 +579,9 @@ class Parser:
             argumentos = []
             Parser.token.selectNext()
             if(Parser.token.actual.type == "open_p"):
+                print("pre", Parser.token.actual.value)
                 Parser.token.selectNext()
+                print("pos", Parser.token.actual.value)
                 argumentos.append(Parser.parseRelExpression())
                 Parser.token.selectNext()
                 
@@ -896,7 +913,8 @@ class Parser:
     def run(codigo_fonte):
         codigo_base = PrePro.filter(codigo_fonte)
         Parser.token = Tokenizer(codigo_base)
-        Parser.token.selectNext()     
+        Parser.token.selectNext() 
+        print(Parser.token.actual.value)    
         
         result = Parser.parseProgram() #result é a arvore de nodes
 
