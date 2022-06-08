@@ -937,8 +937,8 @@ class Parser:
           
 
 
-#entrada = sys.argv[1]
-entrada = "program.c"
+entrada = sys.argv[1]
+#entrada = "program.c"
 if ".c" in entrada:
     with open(entrada, "r") as file:
         result = Parser.run(file.read())
