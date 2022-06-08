@@ -1,7 +1,7 @@
 import sys
 import re
 
-#parte mais dificil: evaluate do funccall
+
 
 class Node():   
 
@@ -126,7 +126,7 @@ class IF(Node):
         elif len(self.children) > 2:
             self.children[2].Evaluate(st)
 
-#CHECAR
+
 class Block(Node):
     def Evaluate(self, st):
         for n in self.children:
@@ -141,12 +141,12 @@ class NoOp(Node):
         pass
 
 
-# OK
+
 dic_FuncTable = {}
 class FuncTable:
 
     @staticmethod
-    def create(nome, value, tipo): #evaluate do funcdec
+    def create(nome, value, tipo): 
         if nome in dic_FuncTable:
             sys.stderr.write("Invalid casting or more than one declaration of a function")
             raise ValueError 
@@ -188,7 +188,7 @@ class SymbolTable:
             raise ValueError 
 
 
-# ok
+
 class FuncDec(Node):
     def Evaluate(self, st):
         vardec = self.children[0]
@@ -197,7 +197,6 @@ class FuncDec(Node):
         FuncTable.create(neto.value, self, vardec.value)
 
 
-#!Duvida!como explorar o FuncDec
 class FuncCall(Node):
     def Evaluate(self, st):
         funcName = self.value
@@ -296,9 +295,7 @@ class Tokenizer:
         numbers = ["1", "2", "3", "4", "5", "6","7", "8","9","0"]
         ReservedWords = ["printf", "scanf", "if", "while", "else", "int", "str", "return", "void"]
         
-    # pula os espcos em branco e \n com while
-    # começa os ifs
-    #erro eh para dar no parser
+
         while(self.position <= len(self.origin) - 1):
             i = self.origin[self.position]
 
@@ -450,7 +447,7 @@ class Tokenizer:
 
 
 
-            #if (i in numbers) or (i  in valid_tokens):
+            
             self.position +=1 
                      
                      
@@ -495,7 +492,7 @@ class Parser:
                         if(Parser.token.actual.type == "ID"):
                             nomevar = Parser.token.actual.value
                             filhos.append(Vardec(typevar, Identifier(nomevar)))
-                            Parser.token.selectNext()    #rever                               
+                            Parser.token.selectNext()                                   
                             while (Parser.token.actual.type == "comma"):
                                 Parser.token.selectNext() 
                                 
@@ -546,7 +543,7 @@ class Parser:
             
         return Block("Block", nodes)
 
-    @staticmethod #ok
+    @staticmethod 
     def parseBlock():
         nodes = []
         if (Parser.token.actual.type != "open_block"):
@@ -582,7 +579,7 @@ class Parser:
                 Parser.token.selectNext()
                 
                 while(Parser.token.actual.type == "comma"):
-                    Parser.token.selectNext() #rever
+                    Parser.token.selectNext() 
                     argumentos.append(Parser.parseRelExpression())
 
                 if(Parser.token.actual.type == "close_p"):
@@ -798,11 +795,8 @@ class Parser:
     @staticmethod
     def parseTerm():       
         
-        result = Parser.parseFactor()
-        #Parser.token.selectNext()
-        
+        result = Parser.parseFactor()    
     
-
         if (type(result) == int) & (Parser.token.actual.type == "int"):
             sys.stderr.write("Faltou operador")
             raise ValueError
@@ -938,7 +932,7 @@ class Parser:
 
 
 entrada = sys.argv[1]
-#entrada = "program.c"
+
 if ".c" in entrada:
     with open(entrada, "r") as file:
         result = Parser.run(file.read())
