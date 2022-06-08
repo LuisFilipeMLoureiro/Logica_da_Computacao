@@ -116,7 +116,7 @@ class WHILE(Node):
 class SCANF(Node):
     def Evaluate(self, st):
         resultado =  int(input())
-        return (resultado, "int")
+        return [resultado, "int"]
 
 class IF(Node):
     def Evaluate(self, st):
@@ -147,7 +147,6 @@ class FuncTable:
 
     @staticmethod
     def create(nome, value, tipo): #evaluate do funcdec
-
         if nome in dic_FuncTable:
             sys.stderr.write("Invalid casting or more than one declaration of a function")
             raise ValueError 
@@ -178,8 +177,8 @@ class SymbolTable:
 
     def setter(self,nome, valor):
         if nome in self.SymbolTable.keys():
-            if valor[1] == self.SymbolTable.keys()[nome][1]:
-                self.SymbolTable.keys()[nome] = [valor[0], valor[1]]
+            if valor[1] == self.SymbolTable[nome][1]:
+                self.SymbolTable[nome] = [valor[0], valor[1]]
 
             else:
                 sys.stderr.write("Invalid association")
@@ -194,7 +193,8 @@ class FuncDec(Node):
     def Evaluate(self, st):
         vardec = self.children[0]
         neto = vardec.children
-        FuncTable.create(neto, self, vardec.value)
+        
+        FuncTable.create(neto.value, self, vardec.value)
 
 
 #!Duvida!como explorar o FuncDec
@@ -202,36 +202,34 @@ class FuncCall(Node):
     def Evaluate(self, st):
         funcName = self.value
         funcdec, tipo = FuncTable.getter(funcName)
-        current_st = SymbolTable()
-        args = []
-        
+        current_st = SymbolTable() 
 
-        if (len(funcdec.children)-2) == len(self.children):            
-            for i in range(1,len(funcdec.children)-2):
-                vardec = self.children[i]
+        if (len(funcdec.children)-2) == len(self.children): 
+            for i in range(1,len(funcdec.children)-1):
+                vardec = self.children[i].value
                 neto = vardec.children[i].value
-                
-                current_st.create(neto, vardec.value)
-                current_st.setter(neto, self.children[i-1].Evaluate(st))
+                                
+                current_st.create(neto, vardec)
 
-            nodeBlock = current_st[-1].evaluate(current_st)
-            if Return[1] == vardec.children[0].value:
-                return nodeBlock
-            else:
-                sys.stderr.write("Missing return in function")
-                raise ValueError      
+            #variaveis locais da funcao
+            for child in self.children:                
+                current_st.setter(neto.value, child.Evaluate(st))
+                
+            nodeBlock = funcdec.children[-1].Evaluate(st)
+            
+            return nodeBlock
+                
 
                 
             
-             #rever o que deve ser retornado
+        
         else:
             sys.stderr.write("Inconsistent number of arguments in function")
             raise ValueError      
 
-            #if arg == "return": return algo nessa linha
             
-#REVISAR ESSE RETURN
-class Return(Node):
+            
+class ReturnNode(Node):
     def Evaluate(self, st):
         
         return self.children.Evaluate(st)
@@ -244,7 +242,7 @@ class Assignment(Node):
         cria2 = self.children[1].Evaluate(st)
         
 
-        SymbolTable.setter(cria1, cria2)
+        st.setter(cria1, cria2)
 
 class Printf(Node):
     def Evaluate(self, st):
@@ -253,7 +251,7 @@ class Printf(Node):
 
 class Identifier(Node):
     def Evaluate(self, st):
-        variavel = SymbolTable.getter(self.value)
+        variavel = st.getter(self.value)
         return(variavel[0],variavel[1])
 
 class Strval(Node):
@@ -264,7 +262,7 @@ class Vardec(Node):
     def Evaluate(self, st):
         _value = self.value
         for ident in self.children:
-            SymbolTable.create(st, ident.value, _value)
+            st.create(ident.value, _value)
 
             
         
@@ -469,14 +467,13 @@ class Parser:
     @staticmethod
     def parseDeclaration():
         
-        filhos = []
-        
         if(Parser.token.actual.type == "type"):
+            filhos = []
             funcType = Parser.token.actual.value
             Parser.token.selectNext()
             if(Parser.token.actual.type == "ID"):
                 funcID = Parser.token.actual.value
-                arg0 = Vardec(funcType, funcID)
+                arg0 = (Vardec(funcType, Identifier(funcID)))
                 filhos.append(arg0)
                 Parser.token.selectNext()
 
@@ -484,61 +481,62 @@ class Parser:
                     Parser.token.selectNext()
 
                     if(Parser.token.actual.type == "close_p"):
-                        Parser.token.selectNext()
-            
-                        result = Parser.parseBlock()
-
-                    # !Duvida! Nao entendi o que devo fazer com a lista de argumentos
-                    else:
-                        
-                        while(Parser.token.actual.type != "close_p"):
-                            print("aqui")
-                            if(Parser.token.actual.type == "type"):
-                                typevar = Parser.token.actual.value
-                                Parser.token.selectNext()                                
-                                if(Parser.token.actual.type == "ID"):
-                                    nomevar = Parser.token.actual.value
-                                    filhos.append(Vardec(typevar, nomevar))
-                                    Parser.token.selectNext()                                   
-                                
-
-                                if(Parser.token.actual.type == "close_p"):
-                                    break
-                                if(Parser.token.actual.type == "comma"):
-                                    Parser.token.selectNext()
-                                    if(Parser.token.actual.type == "close_p"):
-                                        sys.stderr.write("Extra comma in function declaration")
-                                        raise ValueError
-                            else:
-                                sys.stderr.write("Missing type of argument in function")
-                                raise ValueError
-                        
-                        #DUVIDA: como fazer o block para carregar todo o conteudo da funcao
-                        
-                        Parser.token.selectNext()
-                        print("saindo", Parser.token.actual.value)
-                        block = Parser.parseBlock() 
-                        filhos.append(block)
-                        
-                        result = FuncDec(nomevar, filhos)
+                        Parser.token.selectNext()                                                
+                        filhos.append(Parser.parseBlock())
+                        result = FuncDec(funcID, filhos)
                         return result
+                    
+
+                    if(Parser.token.actual.type == "type"):
+                        typevar = Parser.token.actual.value
+                        Parser.token.selectNext() 
+                                     
+                                                            
+                        if(Parser.token.actual.type == "ID"):
+                            nomevar = Parser.token.actual.value
+                            filhos.append(Vardec(typevar, Identifier(nomevar)))
+                            Parser.token.selectNext()    #rever                               
+                            while (Parser.token.actual.type == "comma"):
+                                Parser.token.selectNext() 
+                                
+                                if (Parser.token.actual.type == "type"):
+                                    typevar = Parser.token.actual.value
+                                    Parser.token.selectNext()
+                                    
+                                    if (Parser.token.actual.type == "ID"):
+                                        nomevar = Parser.token.actual.value
+                                        Parser.token.selectNext()
+                                        filhos.append(Vardec(typevar, Identifier(nomevar)))
+
+                                    else:
+                                        sys.stderr.write("Missing name of argument")
+                                        raise ValueError
+
+                                else:
+                                    sys.stderr.write("Missing type in argument")
+                                    raise ValueError
 
 
-                else:
-                    sys.stderr.write("Missing open parentheses in function")
-                    raise ValueError 
-
+                            if(Parser.token.actual.type == "close_p"):
+                                    filhos.append(Parser.parseBlock())
+                                    result = FuncDec(funcID, filhos)
+                                    return result 
+                                
+                            else:
+                                sys.stderr.write("Missing closing parentheses in function declaration")
+                                raise ValueError
+                 
             else:
                 sys.stderr.write("Missing function name")
                 raise ValueError 
         else:
-            sys.stderr.write("Missinga functiona at the start")
+            sys.stderr.write("Missing a function at the start")
             raise ValueError 
         
 
-    # !Duvida! Verificar o parseProgram
+    
     @staticmethod
-    def parseProgram(): #while no EOF
+    def parseProgram(): 
         nodes = []
         while(Parser.token.actual.type != "EOF"):
             
@@ -565,29 +563,28 @@ class Parser:
 
 
     @staticmethod
-    def parseStatement():
-
-        node = NoOp(None)
+    def parseStatement():       
+        
 
         if(Parser.token.actual.type == "END"):
             Parser.token.selectNext()
+            node = NoOp(None)
             return node
 
-
+        #Parser.token.selectNext()
         if(Parser.token.actual.type == "ID"):
             result = Parser.token.actual.value
             argumentos = []
             Parser.token.selectNext()
             if(Parser.token.actual.type == "open_p"):
-                print("pre", Parser.token.actual.value)
                 Parser.token.selectNext()
-                print("pos", Parser.token.actual.value)
                 argumentos.append(Parser.parseRelExpression())
                 Parser.token.selectNext()
                 
                 while(Parser.token.actual.type == "comma"):
-                    Parser.token.selectNext()
+                    Parser.token.selectNext() #rever
                     argumentos.append(Parser.parseRelExpression())
+
                 if(Parser.token.actual.type == "close_p"):
                     Parser.token.selectNext()
                     return FuncCall(result, argumentos)
@@ -597,9 +594,11 @@ class Parser:
 
 
             elif(Parser.token.actual.type == "equal"):
+                
                 Parser.token.selectNext()
-                result = Parser.parseRelExpression()
-                node =  Assignment("equal", [node, result]) 
+
+                node =  Assignment("equal", [result, Parser.parseRelExpression()]) 
+
                 if(Parser.token.actual.type == "END"):
                     Parser.token.selectNext()
                     return node
@@ -629,49 +628,64 @@ class Parser:
                         return node
                     else:
                         sys.stderr.write("Missing closing statement ;")
-                        raise ValueError
-                    
-                   
+                        raise ValueError                   
                 else:
                     sys.stderr.write("Missing closing parenteses")
                     raise ValueError
             else:
                 sys.stderr.write("Missing opening parenteses")
                 raise ValueError
-        elif(Parser.token.actual.type == "type"):
 
+        
+        elif(Parser.token.actual.type == "type"):
             if (Parser.token.actual.value) == "int":
                 result = Vardec("int", [])
                 
             elif(Parser.token.actual.value) == "str":
-                result = Vardec("str", [])
-                
+                result = Vardec("str", [])                
             
             Parser.token.selectNext()
-            #if type == id else error
-            variavel = Parser.token.actual.value
-            result.children.append(Identifier(variavel))
-            Parser.token.selectNext()
-           
+            if Parser.token.actual.type == "ID":            
+                variavel = Parser.token.actual.value
+               
+                result.children.append(Identifier(variavel))
+                Parser.token.selectNext()
+            else:
+                sys.stderr.write("Missing name of variable in declaration")
+                raise ValueError           
 
             while Parser.token.actual.type == "comma":
                 Parser.token.selectNext()
-                #if type == id else error
-                variavel = Parser.token.actual.value
-                result.children.append(Identifier(variavel))
-                Parser.token.selectNext()
+                if Parser.token.actual.type == "ID":  
+                    variavel = Parser.token.actual.value
+                    result.children.append(Identifier(variavel))
+                    Parser.token.selectNext()
+                else:
+                    sys.stderr.write("Missing name of variable in list of declarations")
+                    raise ValueError           
             
-            #testar se é ponto e virgula else error
-            Parser.token.selectNext()
-
-            return result
+            
+            
+            if(Parser.token.actual.type != "END"):
+                sys.stderr.write("Missing ; in declaration of variable")
+                raise ValueError            
+            else:
+                return result
 
         elif(Parser.token.actual.type == "return"):
             Parser.token.selectNext()
             if(Parser.token.actual.type == "open_p"):
+                Parser.token.selectNext()
                 result = Parser.parseRelExpression()
                 if(Parser.token.actual.type == "close_p"):
-                    return result                    
+                    Parser.token.selectNext()
+                    if(Parser.token.actual.type == "END"):
+
+                        return ReturnNode("return", result)
+                    else:
+                        sys.stderr.write("Missing ; in return")
+                        raise ValueError
+
 
                 else:
                     sys.stderr.write("Missing closing parenteses in return")
@@ -682,32 +696,26 @@ class Parser:
             Parser.token.selectNext()
             if(Parser.token.actual.type == "open_p"):
                 Parser.token.selectNext()
-                result = Parser.parseRelExpression()
-                
+                result = Parser.parseRelExpression()                
                 
                 if(Parser.token.actual.type == "close_p"):
                     Parser.token.selectNext()                  
                     result2 = Parser.parseStatement()
                     node = WHILE("", [result, result2])
-                    return node
-                    
+                    return node                   
 
                 else:
                     sys.stderr.write("Missing closing parenteses in while")
                     raise ValueError
-
-
             else:
                 sys.stderr.write("Missing opening parenteses in while")
                 raise ValueError
-
 
         elif(Parser.token.actual.type == "if"):
             Parser.token.selectNext()
             if(Parser.token.actual.type == "open_p"):
                 Parser.token.selectNext()
                 result = Parser.parseRelExpression()
-
 
                 if(Parser.token.actual.type == "close_p"):
                     Parser.token.selectNext()
@@ -722,16 +730,13 @@ class Parser:
                     else:                        
                         node = IF("",[result, result2])
                         return node
-
-
                 else:
                     sys.stderr.write("Missing opening parenteses in if")
                     raise ValueError
-
             else:
                 sys.stderr.write("Missing opening parenteses in if")
                 raise ValueError
-
+        
         else:
             node = Parser.parseBlock()
             return node
@@ -795,6 +800,7 @@ class Parser:
         
         result = Parser.parseFactor()
         #Parser.token.selectNext()
+        
     
 
         if (type(result) == int) & (Parser.token.actual.type == "int"):
@@ -832,13 +838,13 @@ class Parser:
             Parser.token.selectNext()
             return result
 
-        if(Parser.token.actual.type == "str"):
+        elif(Parser.token.actual.type == "str"):
             number = Parser.token.actual.value
             result = Strval(number)
             Parser.token.selectNext()
             return result
 
-        # !Duvida! verificar esse ponto com o RelExpr e o while        
+              
         elif(Parser.token.actual.type == "ID"):
             result = Parser.token.actual.value
             Parser.token.selectNext()
@@ -846,7 +852,12 @@ class Parser:
             if(Parser.token.actual.type == "open_p"):
                 Parser.token.selectNext()
                 argumentos = []
-                argumentos.append(Parser.parseRelExpression())
+                if(Parser.token.actual.type == "close_p"):
+                    Parser.token.selectNext()
+                    return FuncCall(result, argumentos)
+                else:
+                
+                    argumentos.append(Parser.parseRelExpression())
                 while(Parser.token.actual.type == "comma"):
                     Parser.token.selectNext()
                     argumentos.append(Parser.parseRelExpression())
@@ -893,30 +904,26 @@ class Parser:
                     return node
                 else:
                     sys.stderr.write("Missing closing parenteses in scanf")
-                    raise ValueError
-                
+                    raise ValueError                
 
             else:
                 sys.stderr.write("Missing opening parenteses in scanf")
                 raise ValueError
-
-
-
-
         else:
 
             sys.stderr.write("Token invalido na posicao")
             raise ValueError
   
-    # !Duvida! como deve ser o Run? Quem deve ser chamado agora nao eh mais o parseBlock. É o parse.Program?
+    
     @staticmethod
     def run(codigo_fonte):
         codigo_base = PrePro.filter(codigo_fonte)
         Parser.token = Tokenizer(codigo_base)
         Parser.token.selectNext() 
-        print(Parser.token.actual.value)    
+         
         
         result = Parser.parseProgram() #result é a arvore de nodes
+        result.children.append(FuncCall("main",[]))
 
 
         if Parser.token.actual.type != "EOF":
@@ -928,11 +935,12 @@ class Parser:
             
             return result
           
-# !Duvida![1] - esta certo isso? criar um ditionary fora para o evaluate
 
 
-if ".c" in sys.argv[1]:
-    with open(sys.argv[1], "r") as file:
+#entrada = sys.argv[1]
+entrada = "program.c"
+if ".c" in entrada:
+    with open(entrada, "r") as file:
         result = Parser.run(file.read())
         temp_st = SymbolTable()
         result.Evaluate(temp_st)
